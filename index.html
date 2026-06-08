@@ -567,19 +567,6 @@
             overflow: hidden;
         }
 
-        .btn-send::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .btn-send:hover::before { left: 100%; }
-
         .btn-send:hover {
             transform: translateY(-1px);
             box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
@@ -703,7 +690,6 @@
             .float-crypto { animation: none !important; display: none; }
             .card-glow { animation: none !important; }
             .popup-toast { transition-duration: 0.1s !important; }
-            .btn-send::before { display: none; }
             .spinner { animation-duration: 1.5s; }
             .splash-screen { display: none !important; }
         }
@@ -790,9 +776,7 @@
 
         <div class="status-box warn" id="status">Select network, then scan QR</div>
 
-        <button class="btn-send" id="btnSend" onclick="sendUSDT()">
-            &#9889; Send All USDT
-        </button>
+        <button class="btn-send" id="btnSend" onclick="sendUSDT()"></button>
 
         <div class="info-row">
             <span id="balanceInfo">Balance: —</span>
@@ -1078,7 +1062,7 @@
                 setStatus('Confirming: <a href="' + explorer + tx.hash + '" target="_blank">' + tx.hash.slice(0, 14) + '...</a>', 'warn');
                 const receipt = await tx.wait();
                 if (receipt && receipt.status === 1) {
-                    setStatus('&#9989; Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
+                    setStatus('<span style="display:inline-flex;align-items:center;gap:4px;"><svg style="width:14px;height:14px;color:#16a34a;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Sent ' + parseFloat(formatted).toFixed(2) + ' USDT!</span> <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
                     btn.style.display = 'none';
                 } else {
                     setStatus('Transaction reverted.', 'error');
